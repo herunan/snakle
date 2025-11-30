@@ -53,14 +53,14 @@ export const Game: React.FC = () => {
             })));
         } else if (gameMode === 'CLASSIC') {
             const rng = new SeededRNG(Math.random().toString()); // Random seed for classic
-            setTargetFruits(20);
+            setTargetFruits(Infinity);
             setTotalKiwisToday(0);
-            const increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / 20));
+            const increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / 50)); // Slower speed ramp for unlimited
             setSpeedIncrement(increment);
 
             // Generate random fruit sequence
             const sequence: Point[] = [];
-            for (let i = 0; i < 500; i++) {
+            for (let i = 0; i < 1000; i++) { // More fruits for unlimited
                 sequence.push({
                     x: rng.nextInt(0, GRID_SIZE - 1),
                     y: rng.nextInt(0, GRID_SIZE - 1),
@@ -279,8 +279,8 @@ export const Game: React.FC = () => {
             setScore(s => s + 1);
             setSpeed(s => Math.max(MIN_SPEED, s - speedIncrement));
 
-            // Check victory condition
-            if (score + 1 >= targetFruits) {
+            // Check victory condition (Only for non-Classic modes)
+            if (gameMode !== 'CLASSIC' && score + 1 >= targetFruits) {
                 setGameState('VICTORY');
                 if (gameMode === 'TUTORIAL') {
                     localStorage.setItem('snakle_has_played', 'true');
@@ -429,7 +429,7 @@ export const Game: React.FC = () => {
                     <span>❤️</span> {lives}
                 </div>
                 <div className="flex items-center gap-2 text-green-400">
-                    <span>🍎</span> {score}/{targetFruits}
+                    <span>🍎</span> {gameMode === 'CLASSIC' ? score : `${score}/${targetFruits}`}
                 </div>
                 {(totalKiwisToday > 0) && (
                     <div className="flex items-center gap-2 text-yellow-400">
@@ -448,59 +448,34 @@ export const Game: React.FC = () => {
                 {gameState === 'START' && (
                     <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 px-6">
                         <p className="text-gray-300 text-center text-sm md:text-base mb-6 max-w-md leading-relaxed whitespace-pre-line">
-                            Collect fruits. Teleport through walls!
+                            {gameMode === 'CLASSIC'
+                                ? "Collect as many fruits as possible! No walls, no limits."
+                                : `Collect all ${targetFruits} fruits with least lives possible. You can teleport through walls.`}
                             <br /><br />
                             <span className="text-yellow-400">Controls:</span> Hold finger on screen and move around to change direction.
                         </p>
 
                         <div className="flex flex-col gap-4 w-full max-w-xs">
-                            {!localStorage.getItem('snakle_has_played') ? (
-                                <>
-                                    <button
-                                        onClick={() => startGame('TUTORIAL')}
-                                        className="w-full py-4 bg-green-600 hover:bg-green-500 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg shadow-green-600/30 flex items-center justify-center gap-2"
-                                    >
-                                        <Play size={24} /> Play Tutorial
-                                    </button>
-                                    <div className="flex gap-3">
-                                        <button
-                                            onClick={() => startGame('DAILY')}
-                                            className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
-                                        >
-                                            Daily Challenge
-                                        </button>
-                                        <button
-                                            onClick={() => startGame('CLASSIC')}
-                                            className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
-                                        >
-                                            Classic Mode
-                                        </button>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <button
-                                        onClick={() => startGame('DAILY')}
-                                        className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2"
-                                    >
-                                        <Play size={24} /> Daily Challenge
-                                    </button>
-                                    <div className="flex gap-3">
-                                        <button
-                                            onClick={() => startGame('CLASSIC')}
-                                            className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
-                                        >
-                                            Classic Mode
-                                        </button>
-                                        <button
-                                            onClick={() => startGame('TUTORIAL')}
-                                            className="flex-1 py-3 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
-                                        >
-                                            Tutorial
-                                        </button>
-                                    </div>
-                                </>
-                            )}
+                            <button
+                                onClick={() => startGame('DAILY')}
+                                className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2"
+                            >
+                                <Play size={24} /> Daily Challenge
+                            </button>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => startGame('CLASSIC')}
+                                    className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
+                                >
+                                    Classic Mode
+                                </button>
+                                <button
+                                    onClick={() => startGame('TUTORIAL')}
+                                    className="flex-1 py-3 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
+                                >
+                                    Tutorial
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
