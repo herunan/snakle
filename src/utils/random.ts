@@ -28,7 +28,8 @@ export const getDailySeed = (): string => {
 };
 
 export const getDailyNumber = (): number => {
-    const epochStart = new Date('2024-11-01T00:00:00Z'); // Start from Nov 1, 2024
+    // Start from Nov 30, 2024 as day 1
+    const epochStart = new Date('2024-11-30T00:00:00Z');
     const now = new Date();
     const utcNow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const diffTime = utcNow.getTime() - epochStart.getTime();
