@@ -60,355 +60,370 @@ export const Game: React.FC = () => {
         }
     }, [score, lives, elapsedTime, kiwiCount, gameMode, gameState]);
 
-}, [score, lives, elapsedTime, kiwiCount, gameMode, gameState]);
 
-// Initialize Game Logic based on Mode
-useEffect(() => {
-    const isDebug = new URLSearchParams(window.location.search).get('debug') === 'true';
 
-    // Reset state for new mode
-    setFruitSequence([]);
-    setFruitIndex(0);
-    setKiwi(null);
-    setKiwiCount(0);
-    setTotalKiwisToday(0);
-    setKiwisSpawnedSoFar(0);
-    setLastKiwiSpawnIndex(-1);
-    setScore(0);
-    setLives(0);
-    setElapsedTime(0);
-    setStartTime(null);
+    // Initialize Game Logic based on Mode
+    useEffect(() => {
+        const isDebug = new URLSearchParams(window.location.search).get('debug') === 'true';
 
-    if (gameMode === 'TUTORIAL') {
-        setTargetFruits(3);
-        setTotalKiwisToday(1);
-        setFruitSequence(Array.from({ length: 50 }, () => ({
-            x: Math.floor(Math.random() * GRID_SIZE),
-            y: Math.floor(Math.random() * GRID_SIZE)
-        })));
-    } else if (gameMode === 'CLASSIC') {
-        const rng = new SeededRNG(Math.random().toString()); // Random seed for classic
-        setTargetFruits(Infinity);
-        // Enable kiwis in Classic mode (30% chance)
-        const isKiwiDay = rng.next() < 0.3;
-        if (isKiwiDay) {
-            setTotalKiwisToday(rng.nextInt(1, 3));
-        } else {
-            setTotalKiwisToday(0);
-        }
-        const increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / 50)); // Slower speed ramp for unlimited
-        setSpeedIncrement(increment);
+        // Reset state for new mode
+        setFruitSequence([]);
+        setFruitIndex(0);
+        setKiwi(null);
+        setKiwiCount(0);
+        setTotalKiwisToday(0);
+        setKiwisSpawnedSoFar(0);
+        setLastKiwiSpawnIndex(-1);
+        setScore(0);
+        setLives(0);
+        setElapsedTime(0);
+        setStartTime(null);
 
-        // Generate random fruit sequence
-        const sequence: Point[] = [];
-        for (let i = 0; i < 1000; i++) { // More fruits for unlimited
-            sequence.push({
-                x: rng.nextInt(0, GRID_SIZE - 1),
-                y: rng.nextInt(0, GRID_SIZE - 1),
-            });
-        }
-        setFruitSequence(sequence);
-    } else {
-        // Daily Mode
-        const rng = new SeededRNG(getDailySeed());
-
-        if (isDebug) {
+        if (gameMode === 'TUTORIAL') {
             setTargetFruits(3);
             setTotalKiwisToday(1);
-        } else {
-            const target = rng.nextInt(MIN_FRUITS, MAX_FRUITS);
-            setTargetFruits(target);
-            const increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / target));
-            setSpeedIncrement(increment);
-
-            // Kiwi Logic: Every 3-5 days (approx 30% chance)
+            setFruitSequence(Array.from({ length: 50 }, () => ({
+                x: Math.floor(Math.random() * GRID_SIZE),
+                y: Math.floor(Math.random() * GRID_SIZE)
+            })));
+        } else if (gameMode === 'CLASSIC') {
+            const rng = new SeededRNG(Math.random().toString()); // Random seed for classic
+            setTargetFruits(Infinity);
+            // Enable kiwis in Classic mode (30% chance)
             const isKiwiDay = rng.next() < 0.3;
             if (isKiwiDay) {
                 setTotalKiwisToday(rng.nextInt(1, 3));
             } else {
                 setTotalKiwisToday(0);
             }
+            const increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / 50)); // Slower speed ramp for unlimited
+            setSpeedIncrement(increment);
 
-            // Restore saved state if available
-            const today = getDailySeed();
-            const savedState = localStorage.getItem(`snakle_daily_${today}`);
-            if (savedState) {
-                const state = JSON.parse(savedState);
-                if (!state.completed) {
-                    const savedScore = state.score || 0;
-                    setScore(savedScore);
-                    // Penalty: Increment lives when resuming an incomplete game (refresh/return)
-                    const restoredLives = (state.lives || 0) + 1;
-                    setLives(restoredLives);
-                    setElapsedTime(state.elapsedTime || 0);
-                    setKiwiCount(state.kiwiCount || 0);
+            // Generate random fruit sequence
+            const sequence: Point[] = [];
+            for (let i = 0; i < 1000; i++) { // More fruits for unlimited
+                sequence.push({
+                    x: rng.nextInt(0, GRID_SIZE - 1),
+                    y: rng.nextInt(0, GRID_SIZE - 1),
+                });
+            }
+            setFruitSequence(sequence);
+        } else {
+            // Daily Mode
+            const rng = new SeededRNG(getDailySeed());
 
-                    // Restore derived state
-                    setFruitIndex(savedScore);
-                    const restoredSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - (savedScore * increment));
-                    setSpeed(restoredSpeed);
+            if (isDebug) {
+                setTargetFruits(3);
+                setTotalKiwisToday(1);
+            } else {
+                const target = rng.nextInt(MIN_FRUITS, MAX_FRUITS);
+                setTargetFruits(target);
+                const increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / target));
+                setSpeedIncrement(increment);
 
-                    // Restore snake length based on score
-                    const baseSnake = [
-                        { x: 10, y: 10 },
-                        { x: 10, y: 11 },
-                        { x: 10, y: 12 },
-                    ];
-                    const tail = baseSnake[baseSnake.length - 1];
-                    const extraSegments = Array(savedScore).fill(tail);
-                    setSnake([...baseSnake, ...extraSegments]);
-                    setDirection('UP');
-                    setIsAlive(true);
+                // Kiwi Logic: Every 3-5 days (approx 30% chance)
+                const isKiwiDay = rng.next() < 0.3;
+                if (isKiwiDay) {
+                    setTotalKiwisToday(rng.nextInt(1, 3));
+                } else {
+                    setTotalKiwisToday(0);
                 }
-            }
-        }
 
-        // Generate deterministic fruit sequence
-        const sequence: Point[] = [];
-        for (let i = 0; i < 500; i++) {
-            sequence.push({
-                x: rng.nextInt(0, GRID_SIZE - 1),
-                y: rng.nextInt(0, GRID_SIZE - 1),
-            });
-        }
-        setFruitSequence(sequence);
-    }
-}, [gameMode]);
-
-// Timer logic
-useEffect(() => {
-    if (gameState === 'PLAYING') {
-        if (!startTime) setStartTime(Date.now());
-        const timer = setInterval(() => {
-            setElapsedTime(Math.floor((Date.now() - (startTime || Date.now())) / 1000));
-        }, 100);
-        return () => clearInterval(timer);
-    }
-}, [gameState, startTime]);
-
-const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-};
-
-const getTimeToNextPuzzle = () => {
-    const now = new Date();
-    const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
-    const diff = tomorrow.getTime() - now.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-    return `${hours}h ${minutes}m ${seconds}s`;
-};
-
-// Spawn fruit
-const spawnFruit = useCallback(() => {
-    if (fruitSequence.length === 0) return;
-
-    let currentIndex = fruitIndex;
-    let attempts = 0;
-
-    // Try to find the next valid fruit in the sequence
-    while (attempts < 50) { // Limit lookahead to prevent infinite loops
-        const candidate = fruitSequence[currentIndex % fruitSequence.length];
-        currentIndex++;
-
-        const onSnake = snake.some(s => s.x === candidate.x && s.y === candidate.y);
-        const onWall = walls.some(w => w.x === candidate.x && w.y === candidate.y);
-
-        if (!onSnake && !onWall) {
-            setFruit(candidate);
-            setFruitIndex(currentIndex);
-            return;
-        }
-        attempts++;
-    }
-
-    // Fallback: if sequence fails (rare), generate random valid fruit
-    let newFruit: Point;
-    attempts = 0;
-    while (attempts < 100) {
-        newFruit = {
-            x: Math.floor(Math.random() * GRID_SIZE),
-            y: Math.floor(Math.random() * GRID_SIZE),
-        };
-        const onSnake = snake.some(s => s.x === newFruit.x && s.y === newFruit.y);
-        const onWall = walls.some(w => w.x === newFruit.x && w.y === newFruit.y);
-        if (!onSnake && !onWall) {
-            setFruit(newFruit);
-            return;
-        }
-        attempts++;
-    }
-}, [snake, walls, fruitSequence, fruitIndex]);
-
-// Spawn Kiwi (Temporary Fruit)
-useEffect(() => {
-    if (gameState !== 'PLAYING') return;
-
-    // Check if we should spawn a kiwi
-    if (totalKiwisToday > 0 && !kiwi && kiwisSpawnedSoFar < totalKiwisToday) {
-        const interval = Math.floor(targetFruits / (totalKiwisToday + 1));
-        let shouldSpawn = false;
-
-        for (let k = 1; k <= totalKiwisToday; k++) {
-            if (fruitIndex === interval * k) {
-                shouldSpawn = true;
-                break;
-            }
-        }
-
-        if (shouldSpawn && fruitIndex !== lastKiwiSpawnIndex) {
-            setLastKiwiSpawnIndex(fruitIndex);
-            setKiwisSpawnedSoFar(prev => prev + 1);
-            // Spawn logic...
-            let newKiwi: Point;
-            let attempts = 0;
-            while (attempts < 100) {
-                newKiwi = {
-                    x: Math.floor(Math.random() * GRID_SIZE),
-                    y: Math.floor(Math.random() * GRID_SIZE),
-                };
-                const onSnake = snake.some(s => s.x === newKiwi.x && s.y === newKiwi.y);
-                const onWall = walls.some(w => w.x === newKiwi.x && w.y === newKiwi.y);
-                const onFruit = fruit && fruit.x === newKiwi.x && fruit.y === newKiwi.y;
-
-                if (!onSnake && !onWall && !onFruit) {
-                    setKiwi(newKiwi);
-                    const timer = setTimeout(() => {
-                        setKiwi(null);
-                    }, 5000);
-                    return () => clearTimeout(timer);
-                }
-                attempts++;
-            }
-        }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [fruitIndex, gameState, snake, walls, fruit, kiwi, totalKiwisToday, kiwisSpawnedSoFar, lastKiwiSpawnIndex, targetFruits]);
-
-// Initial fruit
-useEffect(() => {
-    if (!fruit && walls.length > 0 && fruitSequence.length > 0) spawnFruit();
-}, [walls, fruitSequence, spawnFruit]);
-
-// Start Game Sequence
-const startGame = (mode: 'DAILY' | 'TUTORIAL' | 'CLASSIC') => {
-    setGameMode(mode);
-
-    if (mode === 'DAILY') {
-        // For Daily, preserve state if restarting (same mode) or rely on effect (mode switch)
-        if (gameMode === 'DAILY') {
-            // Restarting Daily: Reconstruct snake based on current score
-            const baseSnake = [
-                { x: 10, y: 10 },
-                { x: 10, y: 11 },
-                { x: 10, y: 12 },
-            ];
-            const tail = baseSnake[baseSnake.length - 1];
-            const extraSegments = Array(score).fill(tail);
-            setSnake([...baseSnake, ...extraSegments]);
-            setDirection('UP');
-            setIsAlive(true);
-            // Don't reset score, lives, fruitIndex, etc.
-        }
-        // If switching TO Daily, the useEffect will handle state restoration
-    } else {
-        // Classic/Tutorial: Reset everything
-        setFruit(null);
-        setFruitSequence([]);
-        setFruitIndex(0);
-        setScore(0);
-        setLives(0);
-        setElapsedTime(0);
-        setKiwiCount(0);
-        resetSnake();
-        setSpeed(INITIAL_SPEED);
-    }
-
-    setGameState('COUNTDOWN');
-    setCountdown(3);
-    let count = 3;
-    const timer = setInterval(() => {
-        count--;
-        setCountdown(count);
-        if (count === 0) {
-            clearInterval(timer);
-            setGameState('PLAYING');
-        }
-    }, 1000);
-};
-
-
-
-// Game Loop
-useGameLoop(() => {
-    if (gameState !== 'PLAYING') return;
-    moveSnake();
-}, gameState === 'PLAYING' ? speed : null);
-
-// Logic Check
-useEffect(() => {
-    if (!isAlive && gameState === 'PLAYING') {
-        // Died - Show WASTED screen
-        setLives(l => l + 1);
-        setGameState('DEATH');
-        return;
-    }
-
-    if (gameState !== 'PLAYING') return;
-
-    const head = snake[0];
-
-    // Check Fruit
-    if (fruit && head.x === fruit.x && head.y === fruit.y) {
-        grow();
-        setScore(s => s + 1);
-        setSpeed(s => Math.max(MIN_SPEED, s - speedIncrement));
-
-        // Check victory condition (Only for non-Classic modes)
-        if (gameMode !== 'CLASSIC' && score + 1 >= targetFruits) {
-            setGameState('VICTORY');
-            if (gameMode === 'TUTORIAL') {
-                localStorage.setItem('snakle_has_played', 'true');
-            } else if (gameMode === 'DAILY') {
-                // Mark Daily as completed
+                // Restore saved state if available
                 const today = getDailySeed();
-                const state = { score: score + 1, lives, elapsedTime, kiwiCount, completed: true };
+                const savedState = localStorage.getItem(`snakle_daily_${today}`);
+                if (savedState) {
+                    const state = JSON.parse(savedState);
+                    if (!state.completed) {
+                        const savedScore = state.score || 0;
+                        setScore(savedScore);
+                        // Penalty: Increment lives when resuming an incomplete game (refresh/return)
+                        const restoredLives = (state.lives || 0) + 1;
+                        setLives(restoredLives);
+                        setElapsedTime(state.elapsedTime || 0);
+                        setKiwiCount(state.kiwiCount || 0);
+
+                        // Restore derived state
+                        setFruitIndex(savedScore);
+                        const restoredSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - (savedScore * increment));
+                        setSpeed(restoredSpeed);
+
+                        // Restore snake length based on score
+                        const baseSnake = [
+                            { x: 10, y: 10 },
+                            { x: 10, y: 11 },
+                            { x: 10, y: 12 },
+                        ];
+                        const tail = baseSnake[baseSnake.length - 1];
+                        const extraSegments = Array(savedScore).fill(tail);
+                        setSnake([...baseSnake, ...extraSegments]);
+                        setDirection('UP');
+                        setIsAlive(true);
+                    }
+                }
+            }
+
+            // Generate deterministic fruit sequence
+            const sequence: Point[] = [];
+            for (let i = 0; i < 500; i++) {
+                sequence.push({
+                    x: rng.nextInt(0, GRID_SIZE - 1),
+                    y: rng.nextInt(0, GRID_SIZE - 1),
+                });
+            }
+            setFruitSequence(sequence);
+        }
+    }, [gameMode]);
+
+    // Timer logic
+    useEffect(() => {
+        if (gameState === 'PLAYING') {
+            if (!startTime) setStartTime(Date.now());
+            const timer = setInterval(() => {
+                setElapsedTime(Math.floor((Date.now() - (startTime || Date.now())) / 1000));
+            }, 100);
+            return () => clearInterval(timer);
+        }
+    }, [gameState, startTime]);
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    };
+
+    const getTimeToNextPuzzle = () => {
+        const now = new Date();
+        const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+        const diff = tomorrow.getTime() - now.getTime();
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        return `${hours}h ${minutes}m ${seconds}s`;
+    };
+
+    // Spawn fruit
+    const spawnFruit = useCallback(() => {
+        if (fruitSequence.length === 0) return;
+
+        let currentIndex = fruitIndex;
+        let attempts = 0;
+
+        // Try to find the next valid fruit in the sequence
+        while (attempts < 50) { // Limit lookahead to prevent infinite loops
+            const candidate = fruitSequence[currentIndex % fruitSequence.length];
+            currentIndex++;
+
+            const onSnake = snake.some(s => s.x === candidate.x && s.y === candidate.y);
+            const onWall = walls.some(w => w.x === candidate.x && w.y === candidate.y);
+
+            if (!onSnake && !onWall) {
+                setFruit(candidate);
+                setFruitIndex(currentIndex);
+                return;
+            }
+            attempts++;
+        }
+
+        // Fallback: if sequence fails (rare), generate random valid fruit
+        let newFruit: Point;
+        attempts = 0;
+        while (attempts < 100) {
+            newFruit = {
+                x: Math.floor(Math.random() * GRID_SIZE),
+                y: Math.floor(Math.random() * GRID_SIZE),
+            };
+            const onSnake = snake.some(s => s.x === newFruit.x && s.y === newFruit.y);
+            const onWall = walls.some(w => w.x === newFruit.x && w.y === newFruit.y);
+            if (!onSnake && !onWall) {
+                setFruit(newFruit);
+                return;
+            }
+            attempts++;
+        }
+    }, [snake, walls, fruitSequence, fruitIndex]);
+
+    // Spawn Kiwi (Temporary Fruit)
+    useEffect(() => {
+        if (gameState !== 'PLAYING') return;
+
+        // Check if we should spawn a kiwi
+        if (totalKiwisToday > 0 && !kiwi && kiwisSpawnedSoFar < totalKiwisToday) {
+            const interval = Math.floor(targetFruits / (totalKiwisToday + 1));
+            let shouldSpawn = false;
+
+            for (let k = 1; k <= totalKiwisToday; k++) {
+                if (fruitIndex === interval * k) {
+                    shouldSpawn = true;
+                    break;
+                }
+            }
+
+            if (shouldSpawn && fruitIndex !== lastKiwiSpawnIndex) {
+                setLastKiwiSpawnIndex(fruitIndex);
+                setKiwisSpawnedSoFar(prev => prev + 1);
+                // Spawn logic...
+                let newKiwi: Point;
+                let attempts = 0;
+                while (attempts < 100) {
+                    newKiwi = {
+                        x: Math.floor(Math.random() * GRID_SIZE),
+                        y: Math.floor(Math.random() * GRID_SIZE),
+                    };
+                    const onSnake = snake.some(s => s.x === newKiwi.x && s.y === newKiwi.y);
+                    const onWall = walls.some(w => w.x === newKiwi.x && w.y === newKiwi.y);
+                    const onFruit = fruit && fruit.x === newKiwi.x && fruit.y === newKiwi.y;
+
+                    if (!onSnake && !onWall && !onFruit) {
+                        setKiwi(newKiwi);
+                        const timer = setTimeout(() => {
+                            setKiwi(null);
+                        }, 5000);
+                        return () => clearTimeout(timer);
+                    }
+                    attempts++;
+                }
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fruitIndex, gameState, snake, walls, fruit, kiwi, totalKiwisToday, kiwisSpawnedSoFar, lastKiwiSpawnIndex, targetFruits]);
+
+    // Initial fruit
+    useEffect(() => {
+        if (!fruit && walls.length > 0 && fruitSequence.length > 0) spawnFruit();
+    }, [walls, fruitSequence, spawnFruit]);
+
+    // Start Game Sequence
+    const startGame = (mode: 'DAILY' | 'TUTORIAL' | 'CLASSIC') => {
+        setGameMode(mode);
+
+        if (mode === 'DAILY') {
+            // For Daily, preserve state if restarting (same mode) or rely on effect (mode switch)
+            if (gameMode === 'DAILY') {
+                // Restarting Daily: Reconstruct snake based on current score
+                const baseSnake = [
+                    { x: 10, y: 10 },
+                    { x: 10, y: 11 },
+                    { x: 10, y: 12 },
+                ];
+                const tail = baseSnake[baseSnake.length - 1];
+                const extraSegments = Array(score).fill(tail);
+                setSnake([...baseSnake, ...extraSegments]);
+                setDirection('UP');
+                setIsAlive(true);
+                // Don't reset score, lives, fruitIndex, etc.
+            }
+            // If switching TO Daily, the useEffect will handle state restoration
+        } else {
+            // Classic/Tutorial: Reset everything
+            setFruit(null);
+            setFruitSequence([]);
+            setFruitIndex(0);
+            setScore(0);
+            setLives(0);
+            setElapsedTime(0);
+            setKiwiCount(0);
+            resetSnake();
+            setSpeed(INITIAL_SPEED);
+        }
+
+        setGameState('COUNTDOWN');
+        setCountdown(3);
+        let count = 3;
+        const timer = setInterval(() => {
+            count--;
+            setCountdown(count);
+            if (count === 0) {
+                clearInterval(timer);
+                setGameState('PLAYING');
+            }
+        }, 1000);
+    };
+
+
+
+    // Game Loop
+    useGameLoop(() => {
+        if (gameState !== 'PLAYING') return;
+        moveSnake();
+    }, gameState === 'PLAYING' ? speed : null);
+
+    // Logic Check
+    useEffect(() => {
+        if (!isAlive && gameState === 'PLAYING') {
+            // Died - Show WASTED screen
+            setLives(l => l + 1);
+            setGameState('DEATH');
+            return;
+        }
+
+        if (gameState !== 'PLAYING') return;
+
+        const head = snake[0];
+
+        // Check Fruit
+        if (fruit && head.x === fruit.x && head.y === fruit.y) {
+            grow();
+            setScore(s => s + 1);
+            setSpeed(s => Math.max(MIN_SPEED, s - speedIncrement));
+
+            // Check victory condition (Only for non-Classic modes)
+            if (gameMode !== 'CLASSIC' && score + 1 >= targetFruits) {
+                setGameState('VICTORY');
+                if (gameMode === 'TUTORIAL') {
+                    localStorage.setItem('snakle_has_played', 'true');
+                } else if (gameMode === 'DAILY') {
+                    // Mark Daily as completed
+                    const today = getDailySeed();
+                    const state = { score: score + 1, lives, elapsedTime, kiwiCount, completed: true };
+                    localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
+                }
+                return;
+            }
+
+            spawnFruit();
+        }
+
+        // Check Walls (Internal)
+        if (walls.some(w => w.x === head.x && w.y === head.y)) {
+            setLives(l => l + 1);
+            setGameState('DEATH');
+            // Mark Daily as completed on death
+            if (gameMode === 'DAILY') {
+                const today = getDailySeed();
+                const state = { score, lives: lives + 1, elapsedTime, kiwiCount, completed: true };
                 localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
             }
+        }
+
+        // Check Kiwi
+        if (kiwi && head.x === kiwi.x && head.y === kiwi.y) {
+            setKiwi(null);
+            setKiwiCount(c => c + 1);
+            setScore(s => s + 5); // Bonus points for Kiwi? Or just counter. Let's add score too.
+        }
+
+    }, [snake, isAlive, fruit, walls, grow, spawnFruit, resetSnake, gameState, score, targetFruits, kiwi]);
+
+    // Handle death screen dismissal and restart
+    const handleDeathDismiss = () => {
+        if (gameMode === 'DAILY') {
+            // Daily mode: restart the game
+            resetSnake();
+            setGameState('COUNTDOWN');
+            setCountdown(3);
+            let count = 3;
+            const timer = setInterval(() => {
+                count--;
+                setCountdown(count);
+                if (count === 0) {
+                    clearInterval(timer);
+                    setGameState('PLAYING');
+                }
+            }, 1000);
             return;
         }
 
-        spawnFruit();
-    }
-
-    // Check Walls (Internal)
-    if (walls.some(w => w.x === head.x && w.y === head.y)) {
-        setLives(l => l + 1);
-        setGameState('DEATH');
-        // Mark Daily as completed on death
-        if (gameMode === 'DAILY') {
-            const today = getDailySeed();
-            const state = { score, lives: lives + 1, elapsedTime, kiwiCount, completed: true };
-            localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
-        }
-    }
-
-    // Check Kiwi
-    if (kiwi && head.x === kiwi.x && head.y === kiwi.y) {
-        setKiwi(null);
-        setKiwiCount(c => c + 1);
-        setScore(s => s + 5); // Bonus points for Kiwi? Or just counter. Let's add score too.
-    }
-
-}, [snake, isAlive, fruit, walls, grow, spawnFruit, resetSnake, gameState, score, targetFruits, kiwi]);
-
-// Handle death screen dismissal and restart
-const handleDeathDismiss = () => {
-    if (gameMode === 'DAILY') {
-        // Daily mode: restart the game
         resetSnake();
         setGameState('COUNTDOWN');
         setCountdown(3);
@@ -421,386 +436,371 @@ const handleDeathDismiss = () => {
                 setGameState('PLAYING');
             }
         }, 1000);
-        return;
-    }
+    };
 
-    resetSnake();
-    setGameState('COUNTDOWN');
-    setCountdown(3);
-    let count = 3;
-    const timer = setInterval(() => {
-        count--;
-        setCountdown(count);
-        if (count === 0) {
-            clearInterval(timer);
-            setGameState('PLAYING');
-        }
-    }, 1000);
-};
+    // Controls
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (gameState !== 'PLAYING') return;
+            switch (e.key) {
+                case 'ArrowUp': changeDirection('UP'); break;
+                case 'ArrowDown': changeDirection('DOWN'); break;
+                case 'ArrowLeft': changeDirection('LEFT'); break;
+                case 'ArrowRight': changeDirection('RIGHT'); break;
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [changeDirection, gameState]);
 
-// Controls
-useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    // Touch Controls (Joystick/Swipe)
+    const handleTouchStart = (e: React.TouchEvent) => {
         if (gameState !== 'PLAYING') return;
-        switch (e.key) {
-            case 'ArrowUp': changeDirection('UP'); break;
-            case 'ArrowDown': changeDirection('DOWN'); break;
-            case 'ArrowLeft': changeDirection('LEFT'); break;
-            case 'ArrowRight': changeDirection('RIGHT'); break;
+        const touch = e.touches[0];
+        touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (gameState !== 'PLAYING' || !touchStartRef.current) return;
+        const touch = e.touches[0];
+        const diffX = touch.clientX - touchStartRef.current.x;
+        const diffY = touch.clientY - touchStartRef.current.y;
+        const threshold = 30; // Sensitivity
+
+        if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                // Horizontal
+                changeDirection(diffX > 0 ? 'RIGHT' : 'LEFT');
+            } else {
+                // Vertical
+                changeDirection(diffY > 0 ? 'DOWN' : 'UP');
+            }
+            // Reset origin to current position for continuous swiping
+            touchStartRef.current = { x: touch.clientX, y: touch.clientY };
         }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-}, [changeDirection, gameState]);
 
-// Touch Controls (Joystick/Swipe)
-const handleTouchStart = (e: React.TouchEvent) => {
-    if (gameState !== 'PLAYING') return;
-    const touch = e.touches[0];
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-};
+    const handleTouchEnd = () => {
+        touchStartRef.current = null;
+    };
 
-const handleTouchMove = (e: React.TouchEvent) => {
-    if (gameState !== 'PLAYING' || !touchStartRef.current) return;
-    const touch = e.touches[0];
-    const diffX = touch.clientX - touchStartRef.current.x;
-    const diffY = touch.clientY - touchStartRef.current.y;
-    const threshold = 30; // Sensitivity
+    const handleShare = async () => {
+        const deviceTag = isMobile ? '📱Hard' : '⌨️ Easy';
+        let text = '';
 
-    if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
-        if (Math.abs(diffX) > Math.abs(diffY)) {
-            // Horizontal
-            changeDirection(diffX > 0 ? 'RIGHT' : 'LEFT');
+        if (gameMode === 'CLASSIC') {
+            text = `🐍 Snakle Classic •${deviceTag}\n🍎 ${score}`;
+            if (kiwiCount > 0) {
+                text += `\n🥝 ${kiwiCount}`;
+            }
+            text += `\nhttps://snakle.surge.sh`;
         } else {
-            // Vertical
-            changeDirection(diffY > 0 ? 'DOWN' : 'UP');
+            // Daily/Tutorial mode
+            text = `🐍 Snakle •${isMobile ? '📱' : ' ⌨️ '}${isMobile ? 'Hard' : 'Easy'}\n❤️ ${lives}\n⏱️ ${formatTime(elapsedTime)}`;
+            if (kiwiCount > 0) {
+                text += `\n🥝 ${kiwiCount}`;
+            }
+            text += `\nhttps://snakle.surge.sh`;
         }
-        // Reset origin to current position for continuous swiping
-        touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-    }
-};
 
-const handleTouchEnd = () => {
-    touchStartRef.current = null;
-};
-
-const handleShare = async () => {
-    const deviceTag = isMobile ? '📱Hard' : '⌨️ Easy';
-    let text = '';
-
-    if (gameMode === 'CLASSIC') {
-        text = `🐍 Snakle Classic •${deviceTag}\n🍎 ${score}`;
-        if (kiwiCount > 0) {
-            text += `\n🥝 ${kiwiCount}`;
+        try {
+            await navigator.clipboard.writeText(text);
+            alert('Copied to clipboard!');
+        } catch (err) {
+            console.error('Failed to copy', err);
         }
-        text += `\nhttps://snakle.surge.sh`;
-    } else {
-        // Daily/Tutorial mode
-        text = `🐍 Snakle •${isMobile ? '📱' : ' ⌨️ '}${isMobile ? 'Hard' : 'Easy'}\n❤️ ${lives}\n⏱️ ${formatTime(elapsedTime)}`;
-        if (kiwiCount > 0) {
-            text += `\n🥝 ${kiwiCount}`;
+    };
+
+    const handleReplay = () => {
+        // Replay without resetting score/lives/time
+        resetSnake();
+        setFruitIndex(0);
+        setScore(0);
+        setLives(0);
+        setElapsedTime(0);
+        setStartTime(null);
+        setKiwiCount(0);
+        setLastKiwiSpawnIndex(-1);
+        setKiwi(null);
+
+        setGameState('COUNTDOWN');
+        setCountdown(3);
+        let count = 3;
+        const timer = setInterval(() => {
+            count--;
+            setCountdown(count);
+            if (count === 0) {
+                clearInterval(timer);
+                setGameState('PLAYING');
+            }
+        }, 1000);
+    };
+
+    // Handle game mode switching with appropriate consequences
+    const handleModeSwitch = (newMode: 'DAILY' | 'TUTORIAL' | 'CLASSIC') => {
+        // Confirm if playing
+        if (gameState === 'PLAYING' && !confirm('Switch modes? This will end your current game.')) {
+            return;
         }
-        text += `\nhttps://snakle.surge.sh`;
-    }
 
-    try {
-        await navigator.clipboard.writeText(text);
-        alert('Copied to clipboard!');
-    } catch (err) {
-        console.error('Failed to copy', err);
-    }
-};
-
-const handleReplay = () => {
-    // Replay without resetting score/lives/time
-    resetSnake();
-    setFruitIndex(0);
-    setScore(0);
-    setLives(0);
-    setElapsedTime(0);
-    setStartTime(null);
-    setKiwiCount(0);
-    setLastKiwiSpawnIndex(-1);
-    setKiwi(null);
-
-    setGameState('COUNTDOWN');
-    setCountdown(3);
-    let count = 3;
-    const timer = setInterval(() => {
-        count--;
-        setCountdown(count);
-        if (count === 0) {
-            clearInterval(timer);
-            setGameState('PLAYING');
+        // Handle consequences for leaving current mode
+        if (gameMode === 'DAILY' && gameState === 'PLAYING') {
+            // Save state (penalty applied on resume)
+            const today = getDailySeed();
+            const state = { score, lives, elapsedTime, kiwiCount, completed: false };
+            localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
+        } else if (gameMode === 'CLASSIC' && score > classicHighScore) {
+            // Save Classic high score if switching away
+            setClassicHighScore(score);
+            localStorage.setItem('snakle_classic_high_score', score.toString());
         }
-    }, 1000);
-};
 
-// Handle game mode switching with appropriate consequences
-const handleModeSwitch = (newMode: 'DAILY' | 'TUTORIAL' | 'CLASSIC') => {
-    // Confirm if playing
-    if (gameState === 'PLAYING' && !confirm('Switch modes? This will end your current game.')) {
-        return;
-    }
+        // Reset key state items that won't be reset by mode change effect
+        setScore(0);
+        setLives(0);
+        setElapsedTime(0);
+        setStartTime(null);
+        setKiwiCount(0);
 
-    // Handle consequences for leaving current mode
-    if (gameMode === 'DAILY' && gameState === 'PLAYING') {
-        // Save state (penalty applied on resume)
-        const today = getDailySeed();
-        const state = { score, lives, elapsedTime, kiwiCount, completed: false };
-        localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
-    } else if (gameMode === 'CLASSIC' && score > classicHighScore) {
-        // Save Classic high score if switching away
-        setClassicHighScore(score);
-        localStorage.setItem('snakle_classic_high_score', score.toString());
-    }
-
-    // Reset key state items that won't be reset by mode change effect
-    setScore(0);
-    setLives(0);
-    setElapsedTime(0);
-    setStartTime(null);
-    setKiwiCount(0);
-
-    // Start the new game mode
-    startGame(newMode);
-};
+        // Start the new game mode
+        startGame(newMode);
+    };
 
 
-return (
-    <div
-        className="flex flex-col items-center justify-start h-screen w-screen bg-gray-900 text-white overflow-hidden touch-none select-none pt-8 pb-32"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-    >
-        {/* Title at top */}
-        {/* Title at top - Removed mt-4 */}
-        <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-2">
-            SNAKLE
-        </h1>
+    return (
+        <div
+            className="flex flex-col items-center justify-start h-screen w-screen bg-gray-900 text-white overflow-hidden touch-none select-none pt-8 pb-32"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+        >
+            {/* Title at top */}
+            {/* Title at top - Removed mt-4 */}
+            <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-2">
+                SNAKLE
+            </h1>
 
-        {/* Mode Selection Buttons - Show when not on start screen */}
-        {gameState !== 'START' && (
-            <div className="flex gap-2 mb-4 text-xs">
-                {gameMode !== 'DAILY' && (
-                    <button
-                        onClick={() => handleModeSwitch('DAILY')}
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-white font-bold transition-all"
-                    >
-                        Daily
-                    </button>
-                )}
-                {gameMode !== 'CLASSIC' && (
-                    <button
-                        onClick={() => handleModeSwitch('CLASSIC')}
-                        className="px-3 py-1 bg-purple-600 hover:bg-purple-500 rounded text-white font-bold transition-all"
-                    >
-                        Classic
-                    </button>
-                )}
-                {gameMode !== 'TUTORIAL' && (
-                    <button
-                        onClick={() => handleModeSwitch('TUTORIAL')}
-                        className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded text-white font-bold transition-all"
-                    >
-                        Tutorial
-                    </button>
-                )}
-            </div>
-        )}
-
-        {/* Scoreboard - Lives left, Fruits middle, Time right */}
-        {gameState !== 'START' && (
-            <div className="mb-4 flex gap-6 md:gap-12 text-base md:text-lg font-bold font-mono">
-                {gameMode !== 'CLASSIC' && (
-                    <div className="flex items-center gap-2 text-red-400">
-                        <span>❤️</span> {lives}
-                    </div>
-                )}
-                {gameMode === 'CLASSIC' && classicHighScore > 0 && (
-                    <div className="flex items-center gap-2 text-yellow-400">
-                        <span>🏆</span> {classicHighScore}
-                    </div>
-                )}
-                <div className="flex items-center gap-2 text-green-400">
-                    <span>🍎</span> {gameMode === 'CLASSIC' ? score : `${score}/${targetFruits}`}
-                </div>
-                {(kiwisSpawnedSoFar > 0 || kiwi) && (
-                    <div className="flex items-center gap-2 text-yellow-400">
-                        <span>🥝</span> {gameMode === 'CLASSIC' ? kiwiCount : `${kiwiCount}/${kiwisSpawnedSoFar}`}
-                    </div>
-                )}
-                {gameMode !== 'CLASSIC' && (
-                    <div className="flex items-center gap-2 text-blue-400">
-                        <span>⏱️</span> {formatTime(elapsedTime)}
-                    </div>
-                )}
-            </div>
-        )}
-
-        <div className="relative" style={{ filter: gameState === 'DEATH' ? 'grayscale(1)' : 'none' }}>
-            <Board snake={snake} fruit={fruit} walls={walls} kiwi={kiwi} />
-
-            {/* Main Menu Button removed from here - now in title area */}
-
-            {/* Start Screen */}
-            {gameState === 'START' && (
-                <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 px-6">
-                    <p className="text-gray-300 text-left text-sm md:text-base mb-6 max-w-md leading-relaxed">
-                        Eat the fruit without eating yourself. You can go through walls.
-                        <br /><br />
-                        <span className="text-yellow-400">Controls:</span>
-                        <br />
-                        📱 Hold finger on screen and move around
-                        <br />
-                        ⌨️ Arrow keys
-                    </p>
-
-                    <div className="flex flex-col gap-4 w-full max-w-xs">
+            {/* Mode Selection Buttons - Show when not on start screen */}
+            {gameState !== 'START' && (
+                <div className="flex gap-2 mb-4 text-xs">
+                    {gameMode !== 'DAILY' && (
                         <button
-                            onClick={() => startGame('DAILY')}
-                            className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2"
+                            onClick={() => handleModeSwitch('DAILY')}
+                            className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-white font-bold transition-all"
                         >
-                            <Play size={24} /> Snakle Daily #{getDailyNumber()}
+                            Daily
                         </button>
-                        <div className="flex gap-3">
+                    )}
+                    {gameMode !== 'CLASSIC' && (
+                        <button
+                            onClick={() => handleModeSwitch('CLASSIC')}
+                            className="px-3 py-1 bg-purple-600 hover:bg-purple-500 rounded text-white font-bold transition-all"
+                        >
+                            Classic
+                        </button>
+                    )}
+                    {gameMode !== 'TUTORIAL' && (
+                        <button
+                            onClick={() => handleModeSwitch('TUTORIAL')}
+                            className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded text-white font-bold transition-all"
+                        >
+                            Tutorial
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {/* Scoreboard - Lives left, Fruits middle, Time right */}
+            {gameState !== 'START' && (
+                <div className="mb-4 flex gap-6 md:gap-12 text-base md:text-lg font-bold font-mono">
+                    {gameMode !== 'CLASSIC' && (
+                        <div className="flex items-center gap-2 text-red-400">
+                            <span>❤️</span> {lives}
+                        </div>
+                    )}
+                    {gameMode === 'CLASSIC' && classicHighScore > 0 && (
+                        <div className="flex items-center gap-2 text-yellow-400">
+                            <span>🏆</span> {classicHighScore}
+                        </div>
+                    )}
+                    <div className="flex items-center gap-2 text-green-400">
+                        <span>🍎</span> {gameMode === 'CLASSIC' ? score : `${score}/${targetFruits}`}
+                    </div>
+                    {(kiwisSpawnedSoFar > 0 || kiwi) && (
+                        <div className="flex items-center gap-2 text-yellow-400">
+                            <span>🥝</span> {gameMode === 'CLASSIC' ? kiwiCount : `${kiwiCount}/${kiwisSpawnedSoFar}`}
+                        </div>
+                    )}
+                    {gameMode !== 'CLASSIC' && (
+                        <div className="flex items-center gap-2 text-blue-400">
+                            <span>⏱️</span> {formatTime(elapsedTime)}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <div className="relative" style={{ filter: gameState === 'DEATH' ? 'grayscale(1)' : 'none' }}>
+                <Board snake={snake} fruit={fruit} walls={walls} kiwi={kiwi} />
+
+                {/* Main Menu Button removed from here - now in title area */}
+
+                {/* Start Screen */}
+                {gameState === 'START' && (
+                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 px-6">
+                        <p className="text-gray-300 text-left text-sm md:text-base mb-6 max-w-md leading-relaxed">
+                            Eat the fruit without eating yourself. You can go through walls.
+                            <br /><br />
+                            <span className="text-yellow-400">Controls:</span>
+                            <br />
+                            📱 Hold finger on screen and move around
+                            <br />
+                            ⌨️ Arrow keys
+                        </p>
+
+                        <div className="flex flex-col gap-4 w-full max-w-xs">
                             <button
-                                onClick={() => startGame('CLASSIC')}
-                                className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
+                                onClick={() => startGame('DAILY')}
+                                className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2"
                             >
-                                Snakle Classic
+                                <Play size={24} /> Snakle Daily #{getDailyNumber()}
                             </button>
-                            <button
-                                onClick={() => startGame('TUTORIAL')}
-                                className="flex-1 py-3 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
-                            >
-                                Tutorial
-                            </button>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => startGame('CLASSIC')}
+                                    className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
+                                >
+                                    Snakle Classic
+                                </button>
+                                <button
+                                    onClick={() => startGame('TUTORIAL')}
+                                    className="flex-1 py-3 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
+                                >
+                                    Tutorial
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Countdown */}
-            {gameState === 'COUNTDOWN' && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-20">
-                    <div className="text-8xl font-bold text-white animate-bounce drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
-                        {countdown}
+                {/* Countdown */}
+                {gameState === 'COUNTDOWN' && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-20">
+                        <div className="text-8xl font-bold text-white animate-bounce drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
+                            {countdown}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Death Screen - WASTED */}
-            {gameState === 'DEATH' && (
-                <div
-                    className="absolute inset-0 flex items-center justify-center z-20 cursor-pointer"
-                    onClick={gameMode !== 'CLASSIC' ? handleDeathDismiss : undefined}
-                >
-                    <div className="text-center">
-                        <h2 className="text-5xl md:text-6xl font-bold text-red-400 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)]">
-                            WASTED
-                        </h2>
-                        {gameMode === 'CLASSIC' ? (
-                            <>
-                                <p className="text-3xl md:text-4xl text-white font-bold mt-6">
-                                    Score: {score}
-                                </p>
-                                <div className="flex gap-3 justify-center mt-6">
+                {/* Death Screen - WASTED */}
+                {gameState === 'DEATH' && (
+                    <div
+                        className="absolute inset-0 flex items-center justify-center z-20 cursor-pointer"
+                        onClick={gameMode !== 'CLASSIC' ? handleDeathDismiss : undefined}
+                    >
+                        <div className="text-center">
+                            <h2 className="text-5xl md:text-6xl font-bold text-red-400 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)]">
+                                WASTED
+                            </h2>
+                            {gameMode === 'CLASSIC' ? (
+                                <>
+                                    <p className="text-3xl md:text-4xl text-white font-bold mt-6">
+                                        Score: {score}
+                                    </p>
+                                    <div className="flex gap-3 justify-center mt-6">
+                                        <button
+                                            onClick={handleShare}
+                                            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
+                                        >
+                                            <Share2 size={20} /> Share
+                                        </button>
+                                        <button
+                                            onClick={handleDeathDismiss}
+                                            className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
+                                        >
+                                            <Play size={20} /> Try Again
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="text-green-400 text-sm md:text-base mt-4">Click or tap to continue</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Victory Screen */}
+                {gameState === 'VICTORY' && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-900/95 to-blue-900/95 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 p-4">
+                        <h1 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-3">
+                            You ate all the fruit!
+                        </h1>
+                        <div className="text-center mb-4 space-y-2">
+                            <p className="text-xl md:text-2xl font-bold text-white">
+                                {gameMode === 'DAILY' ? `Snakle #${getDailyNumber()}` : gameMode === 'TUTORIAL' ? 'Tutorial' : 'Classic'} 🍎 {score}{kiwiCount > 0 ? ` 🥝 ${kiwiCount}` : ''}
+                            </p>
+                            {gameMode !== 'CLASSIC' && (
+                                <>
+                                    <p className="text-base md:text-lg text-gray-300">
+                                        ❤️ {lives} Live{lives !== 1 ? 's' : ''} Used
+                                    </p>
+                                    <p className="text-base md:text-lg text-gray-300">
+                                        ⏱️ {formatTime(elapsedTime)}
+                                    </p>
+                                </>
+                            )}
+                        </div>
+                        <div className="flex flex-col gap-2 items-center">
+                            <div className="flex gap-3">
+                                {gameMode !== 'TUTORIAL' && (
                                     <button
                                         onClick={handleShare}
-                                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
+                                        className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30"
                                     >
                                         <Share2 size={20} /> Share
                                     </button>
+                                )}
+                                {gameMode === 'CLASSIC' && (
                                     <button
-                                        onClick={handleDeathDismiss}
-                                        className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
+                                        onClick={handleReplay}
+                                        className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
                                     >
-                                        <Play size={20} /> Try Again
+                                        <Play size={18} /> Play Again
                                     </button>
-                                </div>
-                            </>
-                        ) : (
-                            <p className="text-green-400 text-sm md:text-base mt-4">Click or tap to continue</p>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Victory Screen */}
-            {gameState === 'VICTORY' && (
-                <div className="absolute inset-0 bg-gradient-to-br from-green-900/95 to-blue-900/95 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 p-4">
-                    <h1 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-3">
-                        You ate all the fruit!
-                    </h1>
-                    <div className="text-center mb-4 space-y-2">
-                        <p className="text-xl md:text-2xl font-bold text-white">
-                            {gameMode === 'DAILY' ? `Snakle #${getDailyNumber()}` : gameMode === 'TUTORIAL' ? 'Tutorial' : 'Classic'} 🍎 {score}{kiwiCount > 0 ? ` 🥝 ${kiwiCount}` : ''}
-                        </p>
-                        {gameMode !== 'CLASSIC' && (
-                            <>
-                                <p className="text-base md:text-lg text-gray-300">
-                                    ❤️ {lives} Live{lives !== 1 ? 's' : ''} Used
-                                </p>
-                                <p className="text-base md:text-lg text-gray-300">
-                                    ⏱️ {formatTime(elapsedTime)}
-                                </p>
-                            </>
-                        )}
-                    </div>
-                    <div className="flex flex-col gap-2 items-center">
-                        <div className="flex gap-3">
-                            {gameMode !== 'TUTORIAL' && (
-                                <button
-                                    onClick={handleShare}
-                                    className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30"
-                                >
-                                    <Share2 size={20} /> Share
-                                </button>
-                            )}
-                            {gameMode === 'CLASSIC' && (
-                                <button
-                                    onClick={handleReplay}
-                                    className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
-                                >
-                                    <Play size={18} /> Play Again
-                                </button>
-                            )}
-                            {gameMode === 'DAILY' && (
-                                <button
-                                    onClick={() => startGame('CLASSIC')}
-                                    className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
-                                >
-                                    <Play size={18} /> Play Classic
-                                </button>
-                            )}
-                            {gameMode === 'TUTORIAL' && (
-                                <>
+                                )}
+                                {gameMode === 'DAILY' && (
                                     <button
                                         onClick={() => startGame('CLASSIC')}
                                         className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
                                     >
                                         <Play size={18} /> Play Classic
                                     </button>
-                                    <button
-                                        onClick={() => startGame('DAILY')}
-                                        className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
-                                    >
-                                        <Play size={18} /> Play Daily
-                                    </button>
-                                </>
+                                )}
+                                {gameMode === 'TUTORIAL' && (
+                                    <>
+                                        <button
+                                            onClick={() => startGame('CLASSIC')}
+                                            className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
+                                        >
+                                            <Play size={18} /> Play Classic
+                                        </button>
+                                        <button
+                                            onClick={() => startGame('DAILY')}
+                                            className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
+                                        >
+                                            <Play size={18} /> Play Daily
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                            {gameMode === 'DAILY' && (
+                                <p className="text-sm text-gray-400 mt-2">
+                                    Next Snakle in {getTimeToNextPuzzle()}
+                                </p>
                             )}
                         </div>
-                        {gameMode === 'DAILY' && (
-                            <p className="text-sm text-gray-400 mt-2">
-                                Next Snakle in {getTimeToNextPuzzle()}
-                            </p>
-                        )}
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
-    </div>
-);
+    );
 };
