@@ -556,7 +556,7 @@ export const Game: React.FC = () => {
             {gameState !== 'START' && (
                 <button
                     onClick={handleMainMenu}
-                    className="absolute top-4 left-4 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white transition-all z-30"
+                    className="absolute top-0 left-4 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white transition-all z-30"
                 >
                     Main Menu
                 </button>
