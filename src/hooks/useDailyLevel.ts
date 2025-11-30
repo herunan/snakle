@@ -59,8 +59,10 @@ function isConnected(walls: Point[], gridSize: number): boolean {
     return visitedCount === freeCount;
 }
 
-export function useDailyLevel() {
+export function useDailyLevel(mode: 'DAILY' | 'TUTORIAL' | 'CLASSIC' = 'DAILY') {
     const walls = useMemo(() => {
+        if (mode === 'CLASSIC') return [];
+
         // Debug mode check
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
@@ -69,18 +71,20 @@ export function useDailyLevel() {
             }
         }
 
-        const dateSeed = getDailySeed();
+        const dateSeed = mode === 'TUTORIAL' ? 'tutorial-seed' : getDailySeed();
         let attempt = 0;
 
         while (attempt < 100) {
             // Mix seed with attempt to get different results on retry
             const rng = new SeededRNG(`${dateSeed}-${attempt}`);
             const generatedWalls: Point[] = [];
-            const patternType = rng.nextInt(0, 3); // 0: Scattered, 1: Lines, 2: Box/Donut, 3: Maze-ish
+
+            // For tutorial, force a simple pattern (e.g. scattered blocks, low count)
+            const patternType = mode === 'TUTORIAL' ? 0 : rng.nextInt(0, 3);
 
             if (patternType === 0) {
                 // Scattered Blocks
-                const count = rng.nextInt(10, 25);
+                const count = mode === 'TUTORIAL' ? 5 : rng.nextInt(10, 25);
                 for (let i = 0; i < count; i++) {
                     generatedWalls.push({
                         x: rng.nextInt(0, GRID_SIZE - 1),
@@ -164,7 +168,7 @@ export function useDailyLevel() {
         }
 
         return []; // Fallback to empty if all fail
-    }, []);
+    }, [mode]);
 
     return walls;
 }
