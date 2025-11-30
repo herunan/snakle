@@ -24,6 +24,9 @@ export const Game: React.FC = () => {
     const isMobile = typeof window !== 'undefined' && 'maxTouchPoints' in navigator && navigator.maxTouchPoints > 0;
     const [fruitIndex, setFruitIndex] = useState(0);
     const [fruitSequence, setFruitSequence] = useState<Point[]>([]);
+    const [kiwi, setKiwi] = useState<Point | null>(null);
+    const [kiwiCount, setKiwiCount] = useState(0);
+    const touchStartRef = React.useRef<{ x: number, y: number } | null>(null);
 
     // Initialize target fruits count based on daily seed
     useEffect(() => {
@@ -121,6 +124,40 @@ export const Game: React.FC = () => {
         }
     }, [snake, walls, fruitSequence, fruitIndex]);
 
+    // Spawn Kiwi (Temporary Fruit)
+    useEffect(() => {
+        if (gameState !== 'PLAYING') return;
+
+        // Check if we should spawn a kiwi (based on fruit index to be deterministic per game)
+        // Spawn at fruit index 5 and 12, if not already spawned
+        const shouldSpawnKiwi = (fruitIndex === 5 || fruitIndex === 12) && !kiwi;
+
+        if (shouldSpawnKiwi) {
+            let newKiwi: Point;
+            let attempts = 0;
+            while (attempts < 100) {
+                newKiwi = {
+                    x: Math.floor(Math.random() * GRID_SIZE),
+                    y: Math.floor(Math.random() * GRID_SIZE),
+                };
+                const onSnake = snake.some(s => s.x === newKiwi.x && s.y === newKiwi.y);
+                const onWall = walls.some(w => w.x === newKiwi.x && w.y === newKiwi.y);
+                const onFruit = fruit && fruit.x === newKiwi.x && fruit.y === newKiwi.y;
+
+                if (!onSnake && !onWall && !onFruit) {
+                    setKiwi(newKiwi);
+
+                    // Kiwi disappears after 5 seconds
+                    const timer = setTimeout(() => {
+                        setKiwi(null);
+                    }, 5000);
+                    return () => clearTimeout(timer);
+                }
+                attempts++;
+            }
+        }
+    }, [fruitIndex, gameState, snake, walls, fruit, kiwi]);
+
     // Initial fruit
     useEffect(() => {
         if (!fruit && walls.length > 0) spawnFruit();
@@ -181,7 +218,14 @@ export const Game: React.FC = () => {
             setGameState('DEATH');
         }
 
-    }, [snake, isAlive, fruit, walls, grow, spawnFruit, resetSnake, gameState, score, targetFruits]);
+        // Check Kiwi
+        if (kiwi && head.x === kiwi.x && head.y === kiwi.y) {
+            setKiwi(null);
+            setKiwiCount(c => c + 1);
+            setScore(s => s + 5); // Bonus points for Kiwi? Or just counter. Let's add score too.
+        }
+
+    }, [snake, isAlive, fruit, walls, grow, spawnFruit, resetSnake, gameState, score, targetFruits, kiwi]);
 
     // Handle death screen dismissal and restart
     const handleDeathDismiss = () => {
@@ -214,6 +258,37 @@ export const Game: React.FC = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [changeDirection, gameState]);
 
+    // Touch Controls (Joystick/Swipe)
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (gameState !== 'PLAYING') return;
+        const touch = e.touches[0];
+        touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (gameState !== 'PLAYING' || !touchStartRef.current) return;
+        const touch = e.touches[0];
+        const diffX = touch.clientX - touchStartRef.current.x;
+        const diffY = touch.clientY - touchStartRef.current.y;
+        const threshold = 30; // Sensitivity
+
+        if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                // Horizontal
+                changeDirection(diffX > 0 ? 'RIGHT' : 'LEFT');
+            } else {
+                // Vertical
+                changeDirection(diffY > 0 ? 'DOWN' : 'UP');
+            }
+            // Reset origin to current position for continuous swiping
+            touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+        }
+    };
+
+    const handleTouchEnd = () => {
+        touchStartRef.current = null;
+    };
+
     const handleShare = async () => {
         const deviceTag = isMobile ? '📱Hard' : ' ⌨️  Easy'; // Spaces around keyboard emoji on desktop
         const text = `🐍 Snakle •${deviceTag}\n❤️ ${lives}\n⏱️ ${formatTime(elapsedTime)}\nhttps://snakle.surge.sh`;
@@ -243,9 +318,15 @@ export const Game: React.FC = () => {
 
 
     return (
-        <div className="flex flex-col items-center justify-center h-screen w-screen bg-gray-900 text-white overflow-hidden touch-none select-none">
+        <div
+            className="flex flex-col items-center justify-center h-screen w-screen bg-gray-900 text-white overflow-hidden touch-none select-none"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+        >
             {/* Title at top */}
-            <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-4 mt-4">
+            {/* Title at top - Removed mt-4 */}
+            <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-4">
                 SNAKLE
             </h1>
 
@@ -257,19 +338,26 @@ export const Game: React.FC = () => {
                 <div className="flex items-center gap-2 text-green-400">
                     <span>🍎</span> {score}/{targetFruits}
                 </div>
+                {kiwiCount > 0 && (
+                    <div className="flex items-center gap-2 text-yellow-400">
+                        <span>🥝</span> {kiwiCount}
+                    </div>
+                )}
                 <div className="flex items-center gap-2 text-blue-400">
                     <span>⏱️</span> {formatTime(elapsedTime)}
                 </div>
             </div>
 
             <div className="relative">
-                <Board snake={snake} fruit={fruit} walls={walls} />
+                <Board snake={snake} fruit={fruit} walls={walls} kiwi={kiwi} />
 
                 {/* Start Screen */}
                 {gameState === 'START' && (
                     <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 px-6">
                         <p className="text-gray-300 text-center text-sm md:text-base mb-6 max-w-md leading-relaxed whitespace-pre-line">
-                            Collect all {targetFruits} fruits in as few lives as possible. You can teleport through walls!
+                            Collect all {targetFruits} fruits. Teleport through walls!
+                            <br /><br />
+                            <span className="text-yellow-400">New Controls:</span> Hold finger on screen and swipe to change direction.
                         </p>
                         <button
                             onClick={startGame}
@@ -343,48 +431,6 @@ export const Game: React.FC = () => {
                     </div>
                 )}
             </div>
-
-            {/* On-Screen Controls - Always visible like Froggle */}
-            <div className="mt-8 relative w-48 h-48">
-                {/* Diagonal lines background */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-full h-[1px] bg-gray-600 rotate-45 absolute"></div>
-                    <div className="w-full h-[1px] bg-gray-600 -rotate-45 absolute"></div>
-                </div>
-
-                {/* Up Button */}
-                <button
-                    className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 flex items-start justify-center pt-2 active:scale-95 transition-transform"
-                    onClick={() => changeDirection('UP')}
-                >
-                    <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[15px] border-b-gray-400"></div>
-                </button>
-
-                {/* Down Button */}
-                <button
-                    className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-16 flex items-end justify-center pb-2 active:scale-95 transition-transform"
-                    onClick={() => changeDirection('DOWN')}
-                >
-                    <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[15px] border-t-gray-400"></div>
-                </button>
-
-                {/* Left Button */}
-                <button
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-16 h-16 flex items-center justify-start pl-2 active:scale-95 transition-transform"
-                    onClick={() => changeDirection('LEFT')}
-                >
-                    <div className="w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-r-[15px] border-r-gray-400"></div>
-                </button>
-
-                {/* Right Button */}
-                <button
-                    className="absolute right-0 top-1/2 -translate-y-1/2 w-16 h-16 flex items-center justify-end pr-2 active:scale-95 transition-transform"
-                    onClick={() => changeDirection('RIGHT')}
-                >
-                    <div className="w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-l-[15px] border-l-gray-400"></div>
-                </button>
-            </div>
-
 
         </div>
     );
