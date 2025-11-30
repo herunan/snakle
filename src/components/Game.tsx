@@ -732,7 +732,7 @@ export const Game: React.FC = () => {
                         </div>
                         <div className="flex flex-col gap-2 items-center">
                             <div className="flex gap-3">
-                                {isMobile && gameMode !== 'TUTORIAL' && (
+                                {gameMode !== 'TUTORIAL' && (
                                     <button
                                         onClick={handleShare}
                                         className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30"
@@ -773,50 +773,47 @@ export const Game: React.FC = () => {
                                     </>
                                 )}
                             </div>
-                            <button
-                                onClick={handleMainMenu}
-                                className="text-xs text-gray-400 hover:text-white underline mt-2"
-                            >
-                                Main Menu
-                            </button>
                             {gameMode === 'DAILY' && (
-                                <p className="text-xs text-gray-400 mt-1">
+                                <p className="text-sm text-gray-400 mt-2">
                                     Next Snakle in {getTimeToNextPuzzle()}
                                 </p>
                             )}
                         </div>
                     </div>
+                    </div>
                 )}
-            </div>
+        </div>
 
-            {/* Main Menu Confirmation Dialog */}
-            {showMainMenuConfirm && (
-                <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-50 rounded-lg">
-                    <div className="bg-gray-800 p-6 rounded-lg max-w-sm mx-4 text-center">
-                        <h2 className="text-xl font-bold text-white mb-3">Return to Main Menu?</h2>
-                        <p className="text-gray-300 text-sm mb-4">
-                            {gameMode === 'CLASSIC'
-                                ? "You will lose all progress!"
-                                : "This will use a life!"}
-                        </p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowMainMenuConfirm(false)}
-                                className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-white font-bold transition-all"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={returnToMainMenu}
-                                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 rounded text-white font-bold transition-all"
-                            >
-                                Confirm
-                            </button>
-                        </div>
+            {/* Main Menu Confirmation Dialog */ }
+    {
+        showMainMenuConfirm && (
+            <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-50 rounded-lg">
+                <div className="bg-gray-800 p-6 rounded-lg max-w-sm mx-4 text-center">
+                    <h2 className="text-xl font-bold text-white mb-3">Return to Main Menu?</h2>
+                    <p className="text-gray-300 text-sm mb-4">
+                        {gameMode === 'CLASSIC'
+                            ? "You will lose all progress!"
+                            : "This will use a life!"}
+                    </p>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setShowMainMenuConfirm(false)}
+                            className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-white font-bold transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={returnToMainMenu}
+                            className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 rounded text-white font-bold transition-all"
+                        >
+                            Confirm
+                        </button>
                     </div>
                 </div>
-            )}
+            </div>
+        )
+    }
 
-        </div>
+        </div >
     );
 };
