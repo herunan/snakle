@@ -67,5 +67,16 @@ export function useSnake() {
         setIsAlive(true);
     }, []);
 
-    return { snake, direction, changeDirection, moveSnake, isAlive, grow, resetSnake };
+    return {
+        snake,
+        direction,
+        isAlive,
+        moveSnake,
+        changeDirection,
+        grow,
+        resetSnake,
+        setSnake,
+        setDirection,
+        setIsAlive
+    };
 }
