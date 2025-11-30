@@ -685,17 +685,12 @@ export const Game: React.FC = () => {
                 {gameState === 'VICTORY' && (
                     <div className="absolute inset-0 bg-gradient-to-br from-green-900/95 to-blue-900/95 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 p-4">
                         <h1 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-3">
-                            {gameMode === 'DAILY' ? `Daily #${getDailySeed()}` : 'VICTORY!'}
+                            You ate all the fruit!
                         </h1>
-                        <div className="text-center mb-4 space-y-1">
+                        <div className="text-center mb-4 space-y-2">
                             <p className="text-xl md:text-2xl font-bold text-white">
-                                🍎 {score} Apple{score !== 1 ? 's' : ''}
+                                {gameMode === 'DAILY' ? `Snakle #${getDailySeed()}` : 'Classic'} 🍎 {score}{kiwiCount > 0 ? ` 🥝 ${kiwiCount}` : ''}
                             </p>
-                            {kiwiCount > 0 && (
-                                <p className="text-xl md:text-2xl font-bold text-yellow-400">
-                                    🥝 {kiwiCount} Kiwi{kiwiCount !== 1 ? 's' : ''}
-                                </p>
-                            )}
                             {gameMode !== 'CLASSIC' && (
                                 <>
                                     <p className="text-base md:text-lg text-gray-300">
