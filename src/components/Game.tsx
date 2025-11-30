@@ -6,7 +6,7 @@ import { Board } from './Board';
 import { GRID_SIZE, INITIAL_SPEED, MIN_SPEED, SPEED_DECREMENT, MIN_FRUITS, MAX_FRUITS } from '../utils/constants';
 import type { Point } from '../utils/constants';
 import { Share2, Play } from 'lucide-react';
-import { SeededRNG, getDailySeed } from '../utils/random';
+import { SeededRNG, getDailySeed, getDailyNumber } from '../utils/random';
 
 export const Game: React.FC = () => {
     const { snake, changeDirection, moveSnake, isAlive, grow, resetSnake } = useSnake();
@@ -538,9 +538,20 @@ export const Game: React.FC = () => {
         >
             {/* Title at top */}
             {/* Title at top - Removed mt-4 */}
-            <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-4">
-                SNAKLE
-            </h1>
+            <div className="relative flex items-center justify-center mb-4">
+                {gameState !== 'START' && (
+                    <button
+                        onClick={handleMainMenu}
+                        className="absolute left-0 px-2 py-1 text-2xl text-gray-400 hover:text-white transition-all"
+                        title="Main Menu"
+                    >
+                        ↵
+                    </button>
+                )}
+                <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
+                    SNAKLE
+                </h1>
+            </div>
 
             {/* Scoreboard - Lives left, Fruits middle, Time right */}
             {gameState !== 'START' && (
@@ -569,15 +580,7 @@ export const Game: React.FC = () => {
             <div className="relative">
                 <Board snake={snake} fruit={fruit} walls={walls} kiwi={kiwi} />
 
-                {/* Main Menu Button - Always visible during gameplay */}
-                {gameState === 'PLAYING' && (
-                    <button
-                        onClick={handleMainMenu}
-                        className="absolute top-4 right-4 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white transition-all z-30"
-                    >
-                        Main Menu
-                    </button>
-                )}
+                {/* Main Menu Button removed from here - now in title area */}
 
                 {/* Start Screen */}
                 {gameState === 'START' && (
@@ -603,7 +606,7 @@ export const Game: React.FC = () => {
                                 onClick={() => startGame('DAILY')}
                                 className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2"
                             >
-                                <Play size={24} /> Snakle Daily #{getDailySeed()}
+                                <Play size={24} /> Daily #{getDailyNumber()}
                             </button>
                             <div className="flex gap-3">
                                 <button
@@ -629,12 +632,6 @@ export const Game: React.FC = () => {
                         <div className="text-8xl font-bold text-white animate-bounce drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
                             {countdown}
                         </div>
-                        <button
-                            onClick={handleMainMenu}
-                            className="absolute top-4 right-4 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white transition-all z-30"
-                        >
-                            Main Menu
-                        </button>
                     </div>
                 )}
 
@@ -669,15 +666,6 @@ export const Game: React.FC = () => {
                                 <p className="text-white/60 text-sm md:text-base mt-4">Click or tap to continue</p>
                             )}
                         </div>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleMainMenu();
-                            }}
-                            className="absolute top-4 right-4 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white transition-all z-30"
-                        >
-                            Main Menu
-                        </button>
                     </div>
                 )}
 
@@ -689,7 +677,7 @@ export const Game: React.FC = () => {
                         </h1>
                         <div className="text-center mb-4 space-y-2">
                             <p className="text-xl md:text-2xl font-bold text-white">
-                                {gameMode === 'DAILY' ? `Snakle #${getDailySeed()}` : 'Classic'} 🍎 {score}{kiwiCount > 0 ? ` 🥝 ${kiwiCount}` : ''}
+                                {gameMode === 'DAILY' ? `Snakle #${getDailyNumber()}` : gameMode === 'TUTORIAL' ? 'Tutorial' : 'Classic'} 🍎 {score}{kiwiCount > 0 ? ` 🥝 ${kiwiCount}` : ''}
                             </p>
                             {gameMode !== 'CLASSIC' && (
                                 <>
@@ -703,25 +691,51 @@ export const Game: React.FC = () => {
                             )}
                         </div>
                         <div className="flex flex-col gap-2 items-center">
-                            {isMobile && (
-                                <button
-                                    onClick={handleShare}
-                                    className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30"
-                                >
-                                    <Share2 size={20} /> Share
-                                </button>
-                            )}
-                            {gameMode !== 'DAILY' && (
-                                <button
-                                    onClick={handleReplay}
-                                    className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
-                                >
-                                    <Play size={18} /> Play Again
-                                </button>
-                            )}
+                            <div className="flex gap-3">
+                                {isMobile && (
+                                    <button
+                                        onClick={handleShare}
+                                        className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30"
+                                    >
+                                        <Share2 size={20} /> Share
+                                    </button>
+                                )}
+                                {gameMode === 'CLASSIC' && (
+                                    <button
+                                        onClick={handleReplay}
+                                        className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
+                                    >
+                                        <Play size={18} /> Play Again
+                                    </button>
+                                )}
+                                {gameMode === 'DAILY' && (
+                                    <button
+                                        onClick={() => startGame('CLASSIC')}
+                                        className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
+                                    >
+                                        <Play size={18} /> Play Classic
+                                    </button>
+                                )}
+                                {gameMode === 'TUTORIAL' && (
+                                    <>
+                                        <button
+                                            onClick={() => startGame('CLASSIC')}
+                                            className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
+                                        >
+                                            <Play size={18} /> Play Classic
+                                        </button>
+                                        <button
+                                            onClick={() => startGame('DAILY')}
+                                            className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
+                                        >
+                                            <Play size={18} /> Play Daily
+                                        </button>
+                                    </>
+                                )}
+                            </div>
                             <button
                                 onClick={handleMainMenu}
-                                className="text-xs text-gray-400 hover:text-white underline"
+                                className="text-xs text-gray-400 hover:text-white underline mt-2"
                             >
                                 Main Menu
                             </button>

@@ -26,3 +26,12 @@ export const getDailySeed = (): string => {
     const now = new Date();
     return `${now.getUTCFullYear()}-${now.getUTCMonth() + 1}-${now.getUTCDate()}`;
 };
+
+export const getDailyNumber = (): number => {
+    const epochStart = new Date('2024-01-01T00:00:00Z');
+    const now = new Date();
+    const utcNow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const diffTime = utcNow.getTime() - epochStart.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays + 1;
+};
