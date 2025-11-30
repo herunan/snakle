@@ -60,7 +60,13 @@ export const Game: React.FC = () => {
         } else if (gameMode === 'CLASSIC') {
             const rng = new SeededRNG(Math.random().toString()); // Random seed for classic
             setTargetFruits(Infinity);
-            setTotalKiwisToday(0);
+            // Enable kiwis in Classic mode (30% chance)
+            const isKiwiDay = rng.next() < 0.3;
+            if (isKiwiDay) {
+                setTotalKiwisToday(rng.nextInt(1, 3));
+            } else {
+                setTotalKiwisToday(0);
+            }
             const increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / 50)); // Slower speed ramp for unlimited
             setSpeedIncrement(increment);
 
@@ -376,8 +382,24 @@ export const Game: React.FC = () => {
     };
 
     const handleShare = async () => {
-        const deviceTag = isMobile ? '📱Hard' : ' ⌨️  Easy'; // Spaces around keyboard emoji on desktop
-        const text = `🐍 Snakle •${deviceTag}\n❤️ ${lives}\n⏱️ ${formatTime(elapsedTime)}\nhttps://snakle.surge.sh`;
+        const deviceTag = isMobile ? '📱Hard' : '⌨️ Easy';
+        let text = '';
+
+        if (gameMode === 'CLASSIC') {
+            text = `🐍 Snakle Classic ${deviceTag}\n🍎 ${score}`;
+            if (kiwiCount > 0) {
+                text += `\n🥝 ${kiwiCount}`;
+            }
+            text += `\nhttps://snakle.surge.sh`;
+        } else {
+            // Daily/Tutorial mode
+            text = `🐍 Snakle •${deviceTag}\n❤️ ${lives}\n⏱️ ${formatTime(elapsedTime)}`;
+            if (kiwiCount > 0) {
+                text += `\n🥝 ${kiwiCount}`;
+            }
+            text += `\nhttps://snakle.surge.sh`;
+        }
+
         try {
             await navigator.clipboard.writeText(text);
             alert('Copied to clipboard!');
@@ -433,20 +455,24 @@ export const Game: React.FC = () => {
             {/* Scoreboard - Lives left, Fruits middle, Time right */}
             {gameState !== 'START' && (
                 <div className="mb-4 flex gap-6 md:gap-12 text-base md:text-lg font-bold font-mono">
-                    <div className="flex items-center gap-2 text-red-400">
-                        <span>❤️</span> {lives}
-                    </div>
+                    {gameMode !== 'CLASSIC' && (
+                        <div className="flex items-center gap-2 text-red-400">
+                            <span>❤️</span> {lives}
+                        </div>
+                    )}
                     <div className="flex items-center gap-2 text-green-400">
                         <span>🍎</span> {gameMode === 'CLASSIC' ? score : `${score}/${targetFruits}`}
                     </div>
                     {(kiwisSpawnedSoFar > 0 || kiwi) && (
                         <div className="flex items-center gap-2 text-yellow-400">
-                            <span>🥝</span> {kiwiCount}/{kiwisSpawnedSoFar}
+                            <span>🥝</span> {gameMode === 'CLASSIC' ? kiwiCount : `${kiwiCount}/${kiwisSpawnedSoFar}`}
                         </div>
                     )}
-                    <div className="flex items-center gap-2 text-blue-400">
-                        <span>⏱️</span> {formatTime(elapsedTime)}
-                    </div>
+                    {gameMode !== 'CLASSIC' && (
+                        <div className="flex items-center gap-2 text-blue-400">
+                            <span>⏱️</span> {formatTime(elapsedTime)}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -456,12 +482,14 @@ export const Game: React.FC = () => {
                 {/* Start Screen */}
                 {gameState === 'START' && (
                     <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 px-6">
-                        <p className="text-gray-300 text-center text-sm md:text-base mb-6 max-w-md leading-relaxed whitespace-pre-line">
-                            {gameMode === 'CLASSIC'
-                                ? "Collect as many fruits as possible! No walls, no limits."
-                                : `Collect all ${targetFruits} fruits with least lives possible. You can teleport through walls.`}
+                        <p className="text-gray-300 text-left text-sm md:text-base mb-6 max-w-md leading-relaxed">
+                            Eat the fruit without eating yourself. You can go through walls.
                             <br /><br />
-                            <span className="text-yellow-400">Controls:</span> Hold finger on screen and move around to change direction.
+                            <span className="text-yellow-400">Controls:</span>
+                            <br />
+                            📱 Hold finger on screen and move around
+                            <br />
+                            ⌨️ Arrow keys
                         </p>
 
                         <div className="flex flex-col gap-4 w-full max-w-xs">
