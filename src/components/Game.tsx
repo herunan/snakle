@@ -679,7 +679,7 @@ export const Game: React.FC = () => {
                         onClick={gameMode !== 'CLASSIC' ? handleDeathDismiss : undefined}
                     >
                         <div className="text-center">
-                            <h2 className="text-6xl md:text-8xl font-bold text-red-600 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)]">
+                            <h2 className="text-5xl md:text-6xl font-bold text-red-400 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)]">
                                 WASTED
                             </h2>
                             {gameMode === 'CLASSIC' ? (
@@ -703,7 +703,7 @@ export const Game: React.FC = () => {
                                     </div>
                                 </>
                             ) : (
-                                <p className="text-white/60 text-sm md:text-base mt-4">Click or tap to continue</p>
+                                <p className="text-green-400 text-sm md:text-base mt-4">Click or tap to continue</p>
                             )}
                         </div>
                     </div>
