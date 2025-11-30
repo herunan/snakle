@@ -376,9 +376,19 @@ export const Game: React.FC = () => {
     // Handle death screen dismissal and restart
     const handleDeathDismiss = () => {
         if (gameMode === 'DAILY') {
-            // Daily mode: cannot restart, only go to main menu
-            setGameState('START');
+            // Daily mode: restart the game
             resetSnake();
+            setGameState('COUNTDOWN');
+            setCountdown(3);
+            let count = 3;
+            const timer = setInterval(() => {
+                count--;
+                setCountdown(count);
+                if (count === 0) {
+                    clearInterval(timer);
+                    setGameState('PLAYING');
+                }
+            }, 1000);
             return;
         }
 
@@ -581,7 +591,7 @@ export const Game: React.FC = () => {
                 </div>
             )}
 
-            <div className="relative">
+            <div className="relative" style={{ filter: gameState === 'DEATH' ? 'grayscale(1)' : 'none' }}>
                 <Board snake={snake} fruit={fruit} walls={walls} kiwi={kiwi} />
 
                 {/* Main Menu Button removed from here - now in title area */}
@@ -636,7 +646,7 @@ export const Game: React.FC = () => {
                 {/* Death Screen - WASTED */}
                 {gameState === 'DEATH' && (
                     <div
-                        className="absolute inset-0 bg-black/95 flex items-center justify-center z-20 grayscale cursor-pointer"
+                        className="absolute inset-0 flex items-center justify-center z-20 cursor-pointer"
                         onClick={gameMode !== 'CLASSIC' ? handleDeathDismiss : undefined}
                     >
                         <div className="text-center">
