@@ -5,7 +5,7 @@ import { useDailyLevel } from '../hooks/useDailyLevel';
 import { Board } from './Board';
 import { GRID_SIZE, INITIAL_SPEED, MIN_SPEED, SPEED_DECREMENT, MIN_FRUITS, MAX_FRUITS } from '../utils/constants';
 import type { Point } from '../utils/constants';
-import { Share2, Play, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Share2, Play } from 'lucide-react';
 import { SeededRNG, getDailySeed } from '../utils/random';
 
 export const Game: React.FC = () => {
