@@ -22,15 +22,35 @@ export const Game: React.FC = () => {
     const [elapsedTime, setElapsedTime] = useState(0);
     const [speedIncrement, setSpeedIncrement] = useState(SPEED_DECREMENT);
     const isMobile = typeof window !== 'undefined' && 'maxTouchPoints' in navigator && navigator.maxTouchPoints > 0;
+    const [fruitIndex, setFruitIndex] = useState(0);
+    const [fruitSequence, setFruitSequence] = useState<Point[]>([]);
 
     // Initialize target fruits count based on daily seed
     useEffect(() => {
         const rng = new SeededRNG(getDailySeed());
-        const target = rng.nextInt(MIN_FRUITS, MAX_FRUITS);
-        setTargetFruits(target);
-        // Speed increment proportional to target fruits (more fruits = slower speed increase)
-        const increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / target));
-        setSpeedIncrement(increment);
+
+        // Debug mode check
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('debug') === 'true') {
+            setTargetFruits(3);
+        } else {
+            const target = rng.nextInt(MIN_FRUITS, MAX_FRUITS);
+            setTargetFruits(target);
+            // Speed increment proportional to target fruits (more fruits = slower speed increase)
+            const increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / target));
+            setSpeedIncrement(increment);
+        }
+
+        // Generate deterministic fruit sequence
+        const sequence: Point[] = [];
+        // Generate enough fruits for a long game (e.g., 500)
+        for (let i = 0; i < 500; i++) {
+            sequence.push({
+                x: rng.nextInt(0, GRID_SIZE - 1),
+                y: rng.nextInt(0, GRID_SIZE - 1),
+            });
+        }
+        setFruitSequence(sequence);
     }, []);
 
     // Timer logic
@@ -56,13 +76,36 @@ export const Game: React.FC = () => {
         const diff = tomorrow.getTime() - now.getTime();
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        return `${hours}h ${minutes}m`;
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        return `${hours}h ${minutes}m ${seconds}s`;
     };
 
     // Spawn fruit
     const spawnFruit = useCallback(() => {
-        let newFruit: Point;
+        if (fruitSequence.length === 0) return;
+
+        let currentIndex = fruitIndex;
         let attempts = 0;
+
+        // Try to find the next valid fruit in the sequence
+        while (attempts < 50) { // Limit lookahead to prevent infinite loops
+            const candidate = fruitSequence[currentIndex % fruitSequence.length];
+            currentIndex++;
+
+            const onSnake = snake.some(s => s.x === candidate.x && s.y === candidate.y);
+            const onWall = walls.some(w => w.x === candidate.x && w.y === candidate.y);
+
+            if (!onSnake && !onWall) {
+                setFruit(candidate);
+                setFruitIndex(currentIndex);
+                return;
+            }
+            attempts++;
+        }
+
+        // Fallback: if sequence fails (rare), generate random valid fruit
+        let newFruit: Point;
+        attempts = 0;
         while (attempts < 100) {
             newFruit = {
                 x: Math.floor(Math.random() * GRID_SIZE),
@@ -76,7 +119,7 @@ export const Game: React.FC = () => {
             }
             attempts++;
         }
-    }, [snake, walls]);
+    }, [snake, walls, fruitSequence, fruitIndex]);
 
     // Initial fruit
     useEffect(() => {
@@ -302,47 +345,45 @@ export const Game: React.FC = () => {
             </div>
 
             {/* On-Screen Controls - Always visible like Froggle */}
-            {gameState === 'PLAYING' && (
-                <div className="mt-8 relative w-48 h-48">
-                    {/* Diagonal lines background */}
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-full h-[1px] bg-gray-600 rotate-45 absolute"></div>
-                        <div className="w-full h-[1px] bg-gray-600 -rotate-45 absolute"></div>
-                    </div>
-
-                    {/* Up Button */}
-                    <button
-                        className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 flex items-start justify-center pt-2 active:scale-95 transition-transform"
-                        onClick={() => changeDirection('UP')}
-                    >
-                        <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[15px] border-b-gray-400"></div>
-                    </button>
-
-                    {/* Down Button */}
-                    <button
-                        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-16 flex items-end justify-center pb-2 active:scale-95 transition-transform"
-                        onClick={() => changeDirection('DOWN')}
-                    >
-                        <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[15px] border-t-gray-400"></div>
-                    </button>
-
-                    {/* Left Button */}
-                    <button
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-16 h-16 flex items-center justify-start pl-2 active:scale-95 transition-transform"
-                        onClick={() => changeDirection('LEFT')}
-                    >
-                        <div className="w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-r-[15px] border-r-gray-400"></div>
-                    </button>
-
-                    {/* Right Button */}
-                    <button
-                        className="absolute right-0 top-1/2 -translate-y-1/2 w-16 h-16 flex items-center justify-end pr-2 active:scale-95 transition-transform"
-                        onClick={() => changeDirection('RIGHT')}
-                    >
-                        <div className="w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-l-[15px] border-l-gray-400"></div>
-                    </button>
+            <div className="mt-8 relative w-48 h-48">
+                {/* Diagonal lines background */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-full h-[1px] bg-gray-600 rotate-45 absolute"></div>
+                    <div className="w-full h-[1px] bg-gray-600 -rotate-45 absolute"></div>
                 </div>
-            )}
+
+                {/* Up Button */}
+                <button
+                    className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 flex items-start justify-center pt-2 active:scale-95 transition-transform"
+                    onClick={() => changeDirection('UP')}
+                >
+                    <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[15px] border-b-gray-400"></div>
+                </button>
+
+                {/* Down Button */}
+                <button
+                    className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-16 flex items-end justify-center pb-2 active:scale-95 transition-transform"
+                    onClick={() => changeDirection('DOWN')}
+                >
+                    <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[15px] border-t-gray-400"></div>
+                </button>
+
+                {/* Left Button */}
+                <button
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-16 h-16 flex items-center justify-start pl-2 active:scale-95 transition-transform"
+                    onClick={() => changeDirection('LEFT')}
+                >
+                    <div className="w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-r-[15px] border-r-gray-400"></div>
+                </button>
+
+                {/* Right Button */}
+                <button
+                    className="absolute right-0 top-1/2 -translate-y-1/2 w-16 h-16 flex items-center justify-end pr-2 active:scale-95 transition-transform"
+                    onClick={() => changeDirection('RIGHT')}
+                >
+                    <div className="w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-l-[15px] border-l-gray-400"></div>
+                </button>
+            </div>
 
             {/* Share Button (for non-victory states) - Mobile only */}
             {isMobile && gameState !== 'START' && gameState !== 'VICTORY' && (

@@ -61,6 +61,14 @@ function isConnected(walls: Point[], gridSize: number): boolean {
 
 export function useDailyLevel() {
     const walls = useMemo(() => {
+        // Debug mode check
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('debug') === 'true') {
+                return [{ x: 5, y: 5 }]; // Single block obstacle
+            }
+        }
+
         const dateSeed = getDailySeed();
         let attempt = 0;
 
