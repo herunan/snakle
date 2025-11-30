@@ -160,8 +160,8 @@ export const Game: React.FC = () => {
 
     // Initial fruit
     useEffect(() => {
-        if (!fruit && walls.length > 0) spawnFruit();
-    }, [walls]);
+        if (!fruit && walls.length > 0 && fruitSequence.length > 0) spawnFruit();
+    }, [walls, fruitSequence]);
 
     // Start Game Sequence
     const startGame = () => {
@@ -319,7 +319,7 @@ export const Game: React.FC = () => {
 
     return (
         <div
-            className="flex flex-col items-center justify-center h-screen w-screen bg-gray-900 text-white overflow-hidden touch-none select-none"
+            className="flex flex-col items-center justify-start h-screen w-screen bg-gray-900 text-white overflow-hidden touch-none select-none pt-8 pb-32"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -338,7 +338,7 @@ export const Game: React.FC = () => {
                 <div className="flex items-center gap-2 text-green-400">
                     <span>🍎</span> {score}/{targetFruits}
                 </div>
-                {kiwiCount > 0 && (
+                {(kiwi || kiwiCount > 0) && (
                     <div className="flex items-center gap-2 text-yellow-400">
                         <span>🥝</span> {kiwiCount}
                     </div>
