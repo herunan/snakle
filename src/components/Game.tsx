@@ -523,10 +523,22 @@ export const Game: React.FC = () => {
             setClassicHighScore(score);
             localStorage.setItem('snakle_classic_high_score', score.toString());
         }
-        // Tutorial and Classic just reset (no special handling needed)
 
-        // Start new mode
-        startGame(newMode);
+        // Reset all state
+        setScore(0);
+        setLives(0);
+        setElapsedTime(0);
+        setStartTime(null);
+        setKiwi(null);
+        setKiwiCount(0);
+        setTotalKiwisToday(0);
+        setKiwisSpawnedSoFar(0);
+        setLastKiwiSpawnIndex(-1);
+        resetSnake();
+
+        // Change mode and go to start screen
+        setGameMode(newMode);
+        setGameState('START');
     };
 
 
