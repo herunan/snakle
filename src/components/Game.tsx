@@ -28,6 +28,7 @@ export const Game: React.FC = () => {
     const [kiwi, setKiwi] = useState<Point | null>(null);
     const [kiwiCount, setKiwiCount] = useState(0);
     const [totalKiwisToday, setTotalKiwisToday] = useState(0);
+    const [kiwisSpawnedSoFar, setKiwisSpawnedSoFar] = useState(0);
     const [lastKiwiSpawnIndex, setLastKiwiSpawnIndex] = useState(-1);
     const touchStartRef = React.useRef<{ x: number, y: number } | null>(null);
 
@@ -42,7 +43,12 @@ export const Game: React.FC = () => {
         setKiwi(null);
         setKiwiCount(0);
         setTotalKiwisToday(0);
+        setKiwisSpawnedSoFar(0);
         setLastKiwiSpawnIndex(-1);
+        setScore(0);
+        setLives(0);
+        setElapsedTime(0);
+        setStartTime(null);
 
         if (gameMode === 'TUTORIAL') {
             setTargetFruits(3);
@@ -174,7 +180,7 @@ export const Game: React.FC = () => {
         if (gameState !== 'PLAYING') return;
 
         // Check if we should spawn a kiwi
-        if (totalKiwisToday > 0 && !kiwi) {
+        if (totalKiwisToday > 0 && !kiwi && kiwisSpawnedSoFar < totalKiwisToday) {
             const interval = Math.floor(targetFruits / (totalKiwisToday + 1));
             let shouldSpawn = false;
 
@@ -187,6 +193,7 @@ export const Game: React.FC = () => {
 
             if (shouldSpawn && fruitIndex !== lastKiwiSpawnIndex) {
                 setLastKiwiSpawnIndex(fruitIndex);
+                setKiwisSpawnedSoFar(prev => prev + 1);
                 // Spawn logic...
                 let newKiwi: Point;
                 let attempts = 0;
@@ -211,7 +218,7 @@ export const Game: React.FC = () => {
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [fruitIndex, gameState, snake, walls, fruit, kiwi, totalKiwisToday, lastKiwiSpawnIndex, targetFruits]);
+    }, [fruitIndex, gameState, snake, walls, fruit, kiwi, totalKiwisToday, kiwisSpawnedSoFar, lastKiwiSpawnIndex, targetFruits]);
 
     // Initial fruit
     useEffect(() => {
@@ -424,22 +431,24 @@ export const Game: React.FC = () => {
             </h1>
 
             {/* Scoreboard - Lives left, Fruits middle, Time right */}
-            <div className="mb-4 flex gap-6 md:gap-12 text-base md:text-lg font-bold font-mono">
-                <div className="flex items-center gap-2 text-red-400">
-                    <span>❤️</span> {lives}
-                </div>
-                <div className="flex items-center gap-2 text-green-400">
-                    <span>🍎</span> {gameMode === 'CLASSIC' ? score : `${score}/${targetFruits}`}
-                </div>
-                {(totalKiwisToday > 0) && (
-                    <div className="flex items-center gap-2 text-yellow-400">
-                        <span>🥝</span> {kiwiCount}/{totalKiwisToday}
+            {gameState !== 'START' && (
+                <div className="mb-4 flex gap-6 md:gap-12 text-base md:text-lg font-bold font-mono">
+                    <div className="flex items-center gap-2 text-red-400">
+                        <span>❤️</span> {lives}
                     </div>
-                )}
-                <div className="flex items-center gap-2 text-blue-400">
-                    <span>⏱️</span> {formatTime(elapsedTime)}
+                    <div className="flex items-center gap-2 text-green-400">
+                        <span>🍎</span> {gameMode === 'CLASSIC' ? score : `${score}/${targetFruits}`}
+                    </div>
+                    {(kiwisSpawnedSoFar > 0 || kiwi) && (
+                        <div className="flex items-center gap-2 text-yellow-400">
+                            <span>🥝</span> {kiwiCount}/{kiwisSpawnedSoFar}
+                        </div>
+                    )}
+                    <div className="flex items-center gap-2 text-blue-400">
+                        <span>⏱️</span> {formatTime(elapsedTime)}
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="relative">
                 <Board snake={snake} fruit={fruit} walls={walls} kiwi={kiwi} />
@@ -507,34 +516,34 @@ export const Game: React.FC = () => {
                 {/* Victory Screen */}
                 {gameState === 'VICTORY' && (
                     <div className="absolute inset-0 bg-gradient-to-br from-green-900/95 to-blue-900/95 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 p-4">
-                        <h1 className="text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-4">
+                        <h1 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-3">
                             VICTORY!
                         </h1>
-                        <div className="text-center mb-6 space-y-2">
-                            <p className="text-2xl md:text-3xl font-bold text-white">
-                                🍎 {score} Fruits Collected
+                        <div className="text-center mb-4 space-y-1">
+                            <p className="text-xl md:text-2xl font-bold text-white">
+                                🍎 {score} Fruits
                             </p>
-                            <p className="text-lg md:text-xl text-gray-300">
-                                ❤️ {lives} Lives Used
+                            <p className="text-base md:text-lg text-gray-300">
+                                ❤️ {lives} Lives
                             </p>
-                            <p className="text-lg md:text-xl text-gray-300">
+                            <p className="text-base md:text-lg text-gray-300">
                                 ⏱️ {formatTime(elapsedTime)}
                             </p>
                         </div>
-                        <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-2 items-center">
                             {isMobile && (
                                 <button
                                     onClick={handleShare}
-                                    className="flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-full text-xl font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30"
+                                    className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30"
                                 >
-                                    <Share2 size={24} /> Share Result
+                                    <Share2 size={20} /> Share
                                 </button>
                             )}
                             <button
                                 onClick={handleReplay}
-                                className="flex items-center gap-2 px-8 py-3 bg-green-600 hover:bg-green-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
+                                className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
                             >
-                                <Play size={20} /> Play Again
+                                <Play size={18} /> Play Again
                             </button>
                             <button
                                 onClick={() => {
@@ -547,11 +556,11 @@ export const Game: React.FC = () => {
                                     setKiwiCount(0);
                                     resetSnake();
                                 }}
-                                className="text-sm text-gray-400 hover:text-white underline"
+                                className="text-xs text-gray-400 hover:text-white underline"
                             >
                                 Main Menu
                             </button>
-                            <p className="text-sm text-gray-400 mt-2">
+                            <p className="text-xs text-gray-400 mt-1">
                                 Next Snakle in {getTimeToNextPuzzle()}
                             </p>
                         </div>
