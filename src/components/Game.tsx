@@ -25,6 +25,7 @@ export const Game: React.FC = () => {
     const [fruitIndex, setFruitIndex] = useState(0);
     const [fruitSequence, setFruitSequence] = useState<Point[]>([]);
     const [kiwi, setKiwi] = useState<Point | null>(null);
+    const [kiwiCount, setKiwiCount] = useState(0);
     const [totalKiwisToday, setTotalKiwisToday] = useState(0);
     const [lastKiwiSpawnIndex, setLastKiwiSpawnIndex] = useState(-1);
     const touchStartRef = React.useRef<{ x: number, y: number } | null>(null);
