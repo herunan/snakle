@@ -243,7 +243,7 @@ export const Game: React.FC = () => {
 
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
+        <div className="flex flex-col items-center justify-center h-screen w-screen bg-gray-900 text-white overflow-hidden touch-none select-none">
             {/* Title at top */}
             <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-4 mt-4">
                 SNAKLE
@@ -385,17 +385,7 @@ export const Game: React.FC = () => {
                 </button>
             </div>
 
-            {/* Share Button (for non-victory states) - Mobile only */}
-            {isMobile && gameState !== 'START' && gameState !== 'VICTORY' && (
-                <div className="mt-6 flex gap-4">
-                    <button
-                        onClick={handleShare}
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors border border-gray-700"
-                    >
-                        <Share2 size={16} /> Share Result
-                    </button>
-                </div>
-            )}
+
         </div>
     );
 };
