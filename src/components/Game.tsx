@@ -9,7 +9,7 @@ import { Share2, Play } from 'lucide-react';
 import { SeededRNG, getDailySeed, getDailyNumber } from '../utils/random';
 
 export const Game: React.FC = () => {
-    const { snake, changeDirection, moveSnake, isAlive, grow, resetSnake } = useSnake();
+    const { snake, changeDirection, moveSnake, isAlive, grow, resetSnake, setSnake, setDirection, setIsAlive } = useSnake();
     const [gameMode, setGameMode] = useState<'DAILY' | 'TUTORIAL' | 'CLASSIC'>('DAILY');
     const walls = useDailyLevel(gameMode);
     const [fruit, setFruit] = useState<Point | null>(null);
