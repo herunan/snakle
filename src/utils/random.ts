@@ -24,5 +24,5 @@ export class SeededRNG {
 
 export const getDailySeed = (): string => {
     const now = new Date();
-    return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+    return `${now.getUTCFullYear()}-${now.getUTCMonth() + 1}-${now.getUTCDate()}`;
 };

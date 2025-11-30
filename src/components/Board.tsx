@@ -22,8 +22,10 @@ export const Board: React.FC<BoardProps> = ({ snake, fruit, walls }) => {
             className="grid gap-0.5 bg-gray-800 p-1 rounded-lg shadow-2xl border border-gray-700"
             style={{
                 gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
-                width: 'min(90vw, 500px)',
-                aspectRatio: '1/1',
+                width: 'min(90vw, 600px)',
+                height: 'min(90vw, 600px)',
+                maxWidth: '600px',
+                maxHeight: '600px',
             }}
         >
             {cells.map((cell) => {

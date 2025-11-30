@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useGameLoop } from '../hooks/useGameLoop';
 import { useSnake } from '../hooks/useSnake';
 import { useDailyLevel } from '../hooks/useDailyLevel';
 import { Board } from './Board';
-import { GRID_SIZE, INITIAL_SPEED, MIN_SPEED, SPEED_DECREMENT } from '../utils/constants';
+import { GRID_SIZE, INITIAL_SPEED, MIN_SPEED, SPEED_DECREMENT, MIN_FRUITS, MAX_FRUITS } from '../utils/constants';
 import type { Point } from '../utils/constants';
-import { Share2, Play } from 'lucide-react';
+import { Share2, Play, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
+import { SeededRNG, getDailySeed } from '../utils/random';
 
 export const Game: React.FC = () => {
     const { snake, changeDirection, moveSnake, isAlive, grow, resetSnake } = useSnake();
@@ -14,33 +15,48 @@ export const Game: React.FC = () => {
     const [score, setScore] = useState(0);
     const [lives, setLives] = useState(0);
     const [speed, setSpeed] = useState(INITIAL_SPEED);
-    const [gameState, setGameState] = useState<'START' | 'COUNTDOWN' | 'PLAYING' | 'GAMEOVER'>('START');
+    const [gameState, setGameState] = useState<'START' | 'COUNTDOWN' | 'PLAYING' | 'DEATH' | 'VICTORY'>('START');
     const [countdown, setCountdown] = useState(3);
+    const [targetFruits, setTargetFruits] = useState(0);
+    const [startTime, setStartTime] = useState<number | null>(null);
+    const [elapsedTime, setElapsedTime] = useState(0);
+    const [speedIncrement, setSpeedIncrement] = useState(SPEED_DECREMENT);
+    const isMobile = typeof window !== 'undefined' && 'maxTouchPoints' in navigator && navigator.maxTouchPoints > 0;
 
-    // Swipe handling
-    const touchStart = useRef<Point | null>(null);
-    const minSwipeDistance = 30;
+    // Initialize target fruits count based on daily seed
+    useEffect(() => {
+        const rng = new SeededRNG(getDailySeed());
+        const target = rng.nextInt(MIN_FRUITS, MAX_FRUITS);
+        setTargetFruits(target);
+        // Speed increment proportional to target fruits (more fruits = slower speed increase)
+        const increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / target));
+        setSpeedIncrement(increment);
+    }, []);
 
-    const onTouchStart = (e: React.TouchEvent) => {
-        touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    // Timer logic
+    useEffect(() => {
+        if (gameState === 'PLAYING') {
+            if (!startTime) setStartTime(Date.now());
+            const timer = setInterval(() => {
+                setElapsedTime(Math.floor((Date.now() - (startTime || Date.now())) / 1000));
+            }, 100);
+            return () => clearInterval(timer);
+        }
+    }, [gameState, startTime]);
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     };
 
-    const onTouchEnd = (e: React.TouchEvent) => {
-        if (!touchStart.current) return;
-        const touchEnd = { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
-        const dx = touchEnd.x - touchStart.current.x;
-        const dy = touchEnd.y - touchStart.current.y;
-
-        if (Math.abs(dx) > Math.abs(dy)) {
-            if (Math.abs(dx) > minSwipeDistance) {
-                changeDirection(dx > 0 ? 'RIGHT' : 'LEFT');
-            }
-        } else {
-            if (Math.abs(dy) > minSwipeDistance) {
-                changeDirection(dy > 0 ? 'DOWN' : 'UP');
-            }
-        }
-        touchStart.current = null;
+    const getTimeToNextPuzzle = () => {
+        const now = new Date();
+        const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+        const diff = tomorrow.getTime() - now.getTime();
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        return `${hours}h ${minutes}m`;
     };
 
     // Spawn fruit
@@ -91,24 +107,10 @@ export const Game: React.FC = () => {
     // Logic Check
     useEffect(() => {
         if (!isAlive && gameState === 'PLAYING') {
-            // Died
+            // Died - Show WASTED screen
             setLives(l => l + 1);
-            setGameState('GAMEOVER');
-
-            setTimeout(() => {
-                resetSnake();
-                setGameState('COUNTDOWN');
-                setCountdown(3);
-                let count = 3;
-                const timer = setInterval(() => {
-                    count--;
-                    setCountdown(count);
-                    if (count === 0) {
-                        clearInterval(timer);
-                        setGameState('PLAYING');
-                    }
-                }, 1000);
-            }, 1000);
+            setGameState('DEATH');
+            return;
         }
 
         if (gameState !== 'PLAYING') return;
@@ -119,29 +121,40 @@ export const Game: React.FC = () => {
         if (fruit && head.x === fruit.x && head.y === fruit.y) {
             grow();
             setScore(s => s + 1);
-            setSpeed(s => Math.max(MIN_SPEED, s - SPEED_DECREMENT));
+            setSpeed(s => Math.max(MIN_SPEED, s - speedIncrement));
+
+            // Check victory condition
+            if (score + 1 >= targetFruits) {
+                setGameState('VICTORY');
+                return;
+            }
+
             spawnFruit();
         }
 
         // Check Walls (Internal)
         if (walls.some(w => w.x === head.x && w.y === head.y)) {
             setLives(l => l + 1);
-            setGameState('COUNTDOWN'); // Quick restart
-            resetSnake();
-            // Re-trigger countdown
-            setCountdown(3);
-            let count = 3;
-            const timer = setInterval(() => {
-                count--;
-                setCountdown(count);
-                if (count === 0) {
-                    clearInterval(timer);
-                    setGameState('PLAYING');
-                }
-            }, 1000);
+            setGameState('DEATH');
         }
 
-    }, [snake, isAlive, fruit, walls, grow, spawnFruit, resetSnake, gameState]);
+    }, [snake, isAlive, fruit, walls, grow, spawnFruit, resetSnake, gameState, score, targetFruits]);
+
+    // Handle death screen dismissal and restart
+    const handleDeathDismiss = () => {
+        resetSnake();
+        setGameState('COUNTDOWN');
+        setCountdown(3);
+        let count = 3;
+        const timer = setInterval(() => {
+            count--;
+            setCountdown(count);
+            if (count === 0) {
+                clearInterval(timer);
+                setGameState('PLAYING');
+            }
+        }, 1000);
+    };
 
     // Controls
     useEffect(() => {
@@ -159,7 +172,8 @@ export const Game: React.FC = () => {
     }, [changeDirection, gameState]);
 
     const handleShare = async () => {
-        const text = `Snakle #${new Date().toISOString().split('T')[0]}\n🍎 ${score} Fruits\n💀 ${lives} Lives`;
+        const deviceTag = isMobile ? '📱Hard' : ' ⌨️  Easy'; // Spaces around keyboard emoji on desktop
+        const text = `🐍 Snakle •${deviceTag}\n❤️ ${lives}\n⏱️ ${formatTime(elapsedTime)}\nhttps://snakle.surge.sh`;
         try {
             await navigator.clipboard.writeText(text);
             alert('Copied to clipboard!');
@@ -168,40 +182,62 @@ export const Game: React.FC = () => {
         }
     };
 
+    const handleReplay = () => {
+        // Replay without resetting score/lives/time
+        resetSnake();
+        setGameState('COUNTDOWN');
+        setCountdown(3);
+        let count = 3;
+        const timer = setInterval(() => {
+            count--;
+            setCountdown(count);
+            if (count === 0) {
+                clearInterval(timer);
+                setGameState('PLAYING');
+            }
+        }, 1000);
+    };
+
+
     return (
-        <div
-            className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white touch-none"
-            onTouchStart={onTouchStart}
-            onTouchEnd={onTouchEnd}
-        >
-            <div className="mb-6 flex gap-8 text-xl font-bold font-mono">
-                <div className="flex items-center gap-2 text-green-400">
-                    <span>🍎</span> {score}
-                </div>
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
+            {/* Title at top */}
+            <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-4 mt-4">
+                SNAKLE
+            </h1>
+
+            {/* Scoreboard - Lives left, Fruits middle, Time right */}
+            <div className="mb-4 flex gap-6 md:gap-12 text-base md:text-lg font-bold font-mono">
                 <div className="flex items-center gap-2 text-red-400">
-                    <span>💀</span> {lives}
+                    <span>❤️</span> {lives}
+                </div>
+                <div className="flex items-center gap-2 text-green-400">
+                    <span>🍎</span> {score}/{targetFruits}
+                </div>
+                <div className="flex items-center gap-2 text-blue-400">
+                    <span>⏱️</span> {formatTime(elapsedTime)}
                 </div>
             </div>
 
             <div className="relative">
                 <Board snake={snake} fruit={fruit} walls={walls} />
 
-                {/* Overlays */}
+                {/* Start Screen */}
                 {gameState === 'START' && (
-                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20">
-                        <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-8">
-                            SNAKLE
-                        </h1>
+                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 px-6">
+                        <p className="text-gray-300 text-center text-sm md:text-base mb-6 max-w-md leading-relaxed whitespace-pre-line">
+                            Collect all {targetFruits} fruits in as few lives as possible. You can teleport through walls!
+                        </p>
                         <button
                             onClick={startGame}
                             className="flex items-center gap-2 px-8 py-3 bg-green-600 hover:bg-green-500 rounded-full text-xl font-bold transition-all transform hover:scale-105 shadow-lg shadow-green-600/30"
                         >
                             <Play size={24} /> PLAY
                         </button>
-                        <p className="mt-4 text-gray-400 text-sm">Swipe or use Arrow Keys</p>
                     </div>
                 )}
 
+                {/* Countdown */}
                 {gameState === 'COUNTDOWN' && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-20">
                         <div className="text-8xl font-bold text-white animate-bounce drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
@@ -209,17 +245,116 @@ export const Game: React.FC = () => {
                         </div>
                     </div>
                 )}
+
+                {/* Death Screen - WASTED */}
+                {gameState === 'DEATH' && (
+                    <div
+                        className="absolute inset-0 bg-black/95 flex items-center justify-center z-20 cursor-pointer grayscale"
+                        onClick={handleDeathDismiss}
+                    >
+                        <div className="text-center">
+                            <h2 className="text-6xl md:text-8xl font-bold text-red-600 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)]">
+                                WASTED
+                            </h2>
+                            <p className="text-white/60 text-sm md:text-base mt-4">Click or tap to continue</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Victory Screen */}
+                {gameState === 'VICTORY' && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-900/95 to-blue-900/95 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 p-4">
+                        <h1 className="text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-4">
+                            VICTORY!
+                        </h1>
+                        <div className="text-center mb-6 space-y-2">
+                            <p className="text-2xl md:text-3xl font-bold text-white">
+                                🍎 {score} Fruits Collected
+                            </p>
+                            <p className="text-lg md:text-xl text-gray-300">
+                                ❤️ {lives} Lives Used
+                            </p>
+                            <p className="text-lg md:text-xl text-gray-300">
+                                ⏱️ {formatTime(elapsedTime)}
+                            </p>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                            {isMobile && (
+                                <button
+                                    onClick={handleShare}
+                                    className="flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-full text-xl font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30"
+                                >
+                                    <Share2 size={24} /> Share Result
+                                </button>
+                            )}
+                            <button
+                                onClick={handleReplay}
+                                className="flex items-center gap-2 px-8 py-3 bg-green-600 hover:bg-green-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
+                            >
+                                <Play size={20} /> Play Again
+                            </button>
+                            <p className="text-sm text-gray-400 mt-2">
+                                Next Snakle in {getTimeToNextPuzzle()}
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Controls / Footer */}
-            <div className="mt-8 flex gap-4">
-                <button
-                    onClick={handleShare}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors border border-gray-700"
-                >
-                    <Share2 size={16} /> Share Result
-                </button>
-            </div>
+            {/* On-Screen Controls - Always visible like Froggle */}
+            {gameState === 'PLAYING' && (
+                <div className="mt-8 relative w-48 h-48">
+                    {/* Diagonal lines background */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-full h-[1px] bg-gray-600 rotate-45 absolute"></div>
+                        <div className="w-full h-[1px] bg-gray-600 -rotate-45 absolute"></div>
+                    </div>
+
+                    {/* Up Button */}
+                    <button
+                        className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 flex items-start justify-center pt-2 active:scale-95 transition-transform"
+                        onClick={() => changeDirection('UP')}
+                    >
+                        <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[15px] border-b-gray-400"></div>
+                    </button>
+
+                    {/* Down Button */}
+                    <button
+                        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-16 flex items-end justify-center pb-2 active:scale-95 transition-transform"
+                        onClick={() => changeDirection('DOWN')}
+                    >
+                        <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[15px] border-t-gray-400"></div>
+                    </button>
+
+                    {/* Left Button */}
+                    <button
+                        className="absolute left-0 top-1/2 -translate-y-1/2 w-16 h-16 flex items-center justify-start pl-2 active:scale-95 transition-transform"
+                        onClick={() => changeDirection('LEFT')}
+                    >
+                        <div className="w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-r-[15px] border-r-gray-400"></div>
+                    </button>
+
+                    {/* Right Button */}
+                    <button
+                        className="absolute right-0 top-1/2 -translate-y-1/2 w-16 h-16 flex items-center justify-end pr-2 active:scale-95 transition-transform"
+                        onClick={() => changeDirection('RIGHT')}
+                    >
+                        <div className="w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-l-[15px] border-l-gray-400"></div>
+                    </button>
+                </div>
+            )}
+
+            {/* Share Button (for non-victory states) - Mobile only */}
+            {isMobile && gameState !== 'START' && gameState !== 'VICTORY' && (
+                <div className="mt-6 flex gap-4">
+                    <button
+                        onClick={handleShare}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors border border-gray-700"
+                    >
+                        <Share2 size={16} /> Share Result
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

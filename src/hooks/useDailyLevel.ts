@@ -140,8 +140,13 @@ export function useDailyLevel() {
                 }
             }
 
-            // Ensure snake spawn (10,10) is clear
-            const finalWalls = generatedWalls.filter(w => !(w.x === 10 && w.y >= 10 && w.y <= 12));
+            // Ensure snake spawn (10,10) and surrounding area is clear
+            const finalWalls = generatedWalls.filter(w => {
+                // Clear 3x3 area around snake spawn
+                const dx = Math.abs(w.x - 10);
+                const dy = Math.abs(w.y - 10);
+                return !(dx <= 1 && dy <= 2);
+            });
 
             if (isConnected(finalWalls, GRID_SIZE)) {
                 return finalWalls;
