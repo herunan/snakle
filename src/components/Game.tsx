@@ -30,7 +30,7 @@ export const Game: React.FC = () => {
     const [totalKiwisToday, setTotalKiwisToday] = useState(0);
     const [lastKiwiSpawnIndex, setLastKiwiSpawnIndex] = useState(-1);
     const touchStartRef = React.useRef<{ x: number, y: number } | null>(null);
-    const [isTutorial, setIsTutorial] = useState(false);
+
 
     // Initialize Game Logic based on Mode
     useEffect(() => {
@@ -251,11 +251,7 @@ export const Game: React.FC = () => {
             }
         }, 1000);
     };
-    setCountdown(count);
-    if (count === 0) {
-        clearInterval(timer);
-        setGameState('PLAYING');
-    }
+
 
 
     // Game Loop
