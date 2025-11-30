@@ -538,20 +538,19 @@ export const Game: React.FC = () => {
         >
             {/* Title at top */}
             {/* Title at top - Removed mt-4 */}
-            <div className="relative flex items-center justify-center mb-4">
-                {gameState !== 'START' && (
-                    <button
-                        onClick={handleMainMenu}
-                        className="absolute left-0 px-2 py-1 text-2xl text-gray-400 hover:text-white transition-all"
-                        title="Main Menu"
-                    >
-                        ↵
-                    </button>
-                )}
-                <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
-                    SNAKLE
-                </h1>
-            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-4">
+                SNAKLE
+            </h1>
+
+            {/* Main Menu Button - Top Left */}
+            {gameState !== 'START' && (
+                <button
+                    onClick={handleMainMenu}
+                    className="absolute top-4 left-4 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white transition-all z-30"
+                >
+                    Main Menu
+                </button>
+            )}
 
             {/* Scoreboard - Lives left, Fruits middle, Time right */}
             {gameState !== 'START' && (
@@ -637,7 +636,10 @@ export const Game: React.FC = () => {
 
                 {/* Death Screen - WASTED */}
                 {gameState === 'DEATH' && (
-                    <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-20 grayscale">
+                    <div
+                        className="absolute inset-0 bg-black/95 flex items-center justify-center z-20 grayscale cursor-pointer"
+                        onClick={gameMode !== 'CLASSIC' ? handleDeathDismiss : undefined}
+                    >
                         <div className="text-center">
                             <h2 className="text-6xl md:text-8xl font-bold text-red-600 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)]">
                                 WASTED
