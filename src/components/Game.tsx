@@ -447,14 +447,14 @@ export const Game: React.FC = () => {
         let text = '';
 
         if (gameMode === 'CLASSIC') {
-            text = `🐍 Snakle Classic ${deviceTag}\n🍎 ${score}`;
+            text = `🐍 Snakle Classic •${deviceTag}\n🍎 ${score}`;
             if (kiwiCount > 0) {
                 text += `\n🥝 ${kiwiCount}`;
             }
             text += `\nhttps://snakle.surge.sh`;
         } else {
             // Daily/Tutorial mode
-            text = `🐍 Snakle •${deviceTag}\n❤️ ${lives}\n⏱️ ${formatTime(elapsedTime)}`;
+            text = `🐍 Snakle •${isMobile ? '📱' : ' ⌨️ '}${isMobile ? 'Hard' : 'Easy'}\n❤️ ${lives}\n⏱️ ${formatTime(elapsedTime)}`;
             if (kiwiCount > 0) {
                 text += `\n🥝 ${kiwiCount}`;
             }
@@ -692,7 +692,7 @@ export const Game: React.FC = () => {
                         </div>
                         <div className="flex flex-col gap-2 items-center">
                             <div className="flex gap-3">
-                                {isMobile && (
+                                {isMobile && gameMode !== 'TUTORIAL' && (
                                     <button
                                         onClick={handleShare}
                                         className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30"
