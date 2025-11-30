@@ -172,6 +172,18 @@ export const Game: React.FC = () => {
                         setFruitIndex(savedScore);
                         const restoredSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - (savedScore * increment));
                         setSpeed(restoredSpeed);
+
+                        // Restore snake length based on score
+                        const baseSnake = [
+                            { x: 10, y: 10 },
+                            { x: 10, y: 11 },
+                            { x: 10, y: 12 },
+                        ];
+                        const tail = baseSnake[baseSnake.length - 1];
+                        const extraSegments = Array(savedScore).fill(tail);
+                        setSnake([...baseSnake, ...extraSegments]);
+                        setDirection('UP');
+                        setIsAlive(true);
                     }
                 }
             }
@@ -307,18 +319,38 @@ export const Game: React.FC = () => {
     }, [walls, fruitSequence, spawnFruit]);
 
     // Start Game Sequence
-    // Start Game Sequence
     const startGame = (mode: 'DAILY' | 'TUTORIAL' | 'CLASSIC') => {
         setGameMode(mode);
 
-        // Reset fruit state immediately to prevent transfer
-        setFruit(null);
-        setFruitSequence([]);
-        setFruitIndex(0);
-
-        // Always reset snake to default state (position, size, speed)
-        resetSnake();
-        setSpeed(INITIAL_SPEED);
+        if (mode === 'DAILY') {
+            // For Daily, preserve state if restarting (same mode) or rely on effect (mode switch)
+            if (gameMode === 'DAILY') {
+                // Restarting Daily: Reconstruct snake based on current score
+                const baseSnake = [
+                    { x: 10, y: 10 },
+                    { x: 10, y: 11 },
+                    { x: 10, y: 12 },
+                ];
+                const tail = baseSnake[baseSnake.length - 1];
+                const extraSegments = Array(score).fill(tail);
+                setSnake([...baseSnake, ...extraSegments]);
+                setDirection('UP');
+                setIsAlive(true);
+                // Don't reset score, lives, fruitIndex, etc.
+            }
+            // If switching TO Daily, the useEffect will handle state restoration
+        } else {
+            // Classic/Tutorial: Reset everything
+            setFruit(null);
+            setFruitSequence([]);
+            setFruitIndex(0);
+            setScore(0);
+            setLives(0);
+            setElapsedTime(0);
+            setKiwiCount(0);
+            resetSnake();
+            setSpeed(INITIAL_SPEED);
+        }
 
         setGameState('COUNTDOWN');
         setCountdown(3);
