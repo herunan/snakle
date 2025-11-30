@@ -278,22 +278,10 @@ export const Game: React.FC = () => {
     // Start Game Sequence
     const startGame = (mode: 'DAILY' | 'TUTORIAL' | 'CLASSIC') => {
         setGameMode(mode);
-        // Wait for effect to update state? No, effect runs on gameMode change.
-        // But we need to wait for walls to update too.
-        // Actually, setting gameMode triggers re-render, which triggers useDailyLevel, which updates walls.
-        // AND triggers useEffect to set fruits.
-        // So we should delay starting countdown slightly or just rely on React.
 
-        // Better: Set mode, then in a useEffect, if mode changed and we are in START, move to countdown?
-        // Or just set mode here, and let the user click "Play" after selecting mode?
-        // User request: "first time players get the option to play tutortial or play the daily. but also have classic mode"
-        // Implies buttons on start screen that start the game.
-
-        // Let's make the buttons set mode AND start game.
-        // We need to ensure state is ready.
-        // Since useDailyLevel is memoized on mode, it updates immediately on render.
-        // The fruit generation effect also runs on mode change.
-        // We can just set state to COUNTDOWN in a setTimeout to allow one render cycle?
+        // Always reset snake to default state (position, size, speed)
+        resetSnake();
+        setSpeed(INITIAL_SPEED);
 
         setGameState('COUNTDOWN');
         setCountdown(3);
