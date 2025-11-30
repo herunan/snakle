@@ -621,7 +621,7 @@ export const Game: React.FC = () => {
                                     onClick={() => startGame('CLASSIC')}
                                     className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
                                 >
-                                    Classic Mode
+                                    Snakle Classic
                                 </button>
                                 <button
                                     onClick={() => startGame('TUTORIAL')}
