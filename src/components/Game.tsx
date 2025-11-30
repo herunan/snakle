@@ -640,15 +640,34 @@ export const Game: React.FC = () => {
 
                 {/* Death Screen - WASTED */}
                 {gameState === 'DEATH' && (
-                    <div
-                        className="absolute inset-0 bg-black/95 flex items-center justify-center z-20 cursor-pointer grayscale"
-                        onClick={handleDeathDismiss}
-                    >
+                    <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-20 grayscale">
                         <div className="text-center">
                             <h2 className="text-6xl md:text-8xl font-bold text-red-600 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)]">
                                 WASTED
                             </h2>
-                            <p className="text-white/60 text-sm md:text-base mt-4">Click or tap to continue</p>
+                            {gameMode === 'CLASSIC' ? (
+                                <>
+                                    <p className="text-3xl md:text-4xl text-white font-bold mt-6">
+                                        Score: {score}
+                                    </p>
+                                    <div className="flex gap-3 justify-center mt-6">
+                                        <button
+                                            onClick={handleShare}
+                                            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
+                                        >
+                                            <Share2 size={20} /> Share
+                                        </button>
+                                        <button
+                                            onClick={handleDeathDismiss}
+                                            className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
+                                        >
+                                            <Play size={20} /> Try Again
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="text-white/60 text-sm md:text-base mt-4">Click or tap to continue</p>
+                            )}
                         </div>
                         <button
                             onClick={(e) => {
@@ -666,18 +685,22 @@ export const Game: React.FC = () => {
                 {gameState === 'VICTORY' && (
                     <div className="absolute inset-0 bg-gradient-to-br from-green-900/95 to-blue-900/95 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 p-4">
                         <h1 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-3">
-                            VICTORY!
+                            {gameMode === 'DAILY' ? `Daily #${getDailySeed()}` : 'VICTORY!'}
                         </h1>
                         <div className="text-center mb-4 space-y-1">
                             <p className="text-xl md:text-2xl font-bold text-white">
-                                🍎 {score} Fruits
+                                🍎 {score} Apple{score !== 1 ? 's' : ''}
                             </p>
-                            <p className="text-base md:text-lg text-gray-300">
-                                ❤️ {lives} Lives
-                            </p>
-                            <p className="text-base md:text-lg text-gray-300">
-                                ⏱️ {formatTime(elapsedTime)}
-                            </p>
+                            {gameMode !== 'CLASSIC' && (
+                                <>
+                                    <p className="text-base md:text-lg text-gray-300">
+                                        ❤️ {lives} Live{lives !== 1 ? 's' : ''} Used
+                                    </p>
+                                    <p className="text-base md:text-lg text-gray-300">
+                                        ⏱️ {formatTime(elapsedTime)}
+                                    </p>
+                                </>
+                            )}
                         </div>
                         <div className="flex flex-col gap-2 items-center">
                             {isMobile && (
