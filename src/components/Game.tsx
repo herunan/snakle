@@ -552,11 +552,11 @@ export const Game: React.FC = () => {
                 SNAKLE
             </h1>
 
-            {/* Main Menu Button - Top Left */}
+            {/* Main Menu Button - Top Right */}
             {gameState !== 'START' && (
                 <button
                     onClick={handleMainMenu}
-                    className="absolute top-0 left-4 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white transition-all z-30"
+                    className="absolute top-0 right-4 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white transition-all z-30"
                 >
                     Main Menu
                 </button>
