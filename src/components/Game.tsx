@@ -691,6 +691,11 @@ export const Game: React.FC = () => {
                             <p className="text-xl md:text-2xl font-bold text-white">
                                 🍎 {score} Apple{score !== 1 ? 's' : ''}
                             </p>
+                            {kiwiCount > 0 && (
+                                <p className="text-xl md:text-2xl font-bold text-yellow-400">
+                                    🥝 {kiwiCount} Kiwi{kiwiCount !== 1 ? 's' : ''}
+                                </p>
+                            )}
                             {gameMode !== 'CLASSIC' && (
                                 <>
                                     <p className="text-base md:text-lg text-gray-300">
