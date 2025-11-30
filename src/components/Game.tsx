@@ -43,23 +43,7 @@ export const Game: React.FC = () => {
     }, []);
 
     // Save/Load Daily game state
-    useEffect(() => {
-        if (gameMode === 'DAILY') {
-            const today = getDailySeed();
-            const savedState = localStorage.getItem(`snakle_daily_${today}`);
 
-            if (savedState && gameState === 'START') {
-                const state = JSON.parse(savedState);
-                // Restore state if not completed
-                if (!state.completed) {
-                    setScore(state.score || 0);
-                    setLives(state.lives || 0);
-                    setElapsedTime(state.elapsedTime || 0);
-                    setKiwiCount(state.kiwiCount || 0);
-                }
-            }
-        }
-    }, [gameMode, gameState]);
 
     // Save Daily state on changes
     useEffect(() => {
@@ -141,6 +125,25 @@ export const Game: React.FC = () => {
                     setTotalKiwisToday(rng.nextInt(1, 3));
                 } else {
                     setTotalKiwisToday(0);
+                }
+
+                // Restore saved state if available
+                const today = getDailySeed();
+                const savedState = localStorage.getItem(`snakle_daily_${today}`);
+                if (savedState) {
+                    const state = JSON.parse(savedState);
+                    if (!state.completed) {
+                        const savedScore = state.score || 0;
+                        setScore(savedScore);
+                        setLives(state.lives || 0);
+                        setElapsedTime(state.elapsedTime || 0);
+                        setKiwiCount(state.kiwiCount || 0);
+
+                        // Restore derived state
+                        setFruitIndex(savedScore);
+                        const restoredSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - (savedScore * increment));
+                        setSpeed(restoredSpeed);
+                    }
                 }
             }
 
