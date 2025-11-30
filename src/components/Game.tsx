@@ -25,35 +25,57 @@ export const Game: React.FC = () => {
     const [fruitIndex, setFruitIndex] = useState(0);
     const [fruitSequence, setFruitSequence] = useState<Point[]>([]);
     const [kiwi, setKiwi] = useState<Point | null>(null);
-    const [kiwiCount, setKiwiCount] = useState(0);
+    const [totalKiwisToday, setTotalKiwisToday] = useState(0);
+    const [lastKiwiSpawnIndex, setLastKiwiSpawnIndex] = useState(-1);
     const touchStartRef = React.useRef<{ x: number, y: number } | null>(null);
+    const [isTutorial, setIsTutorial] = useState(false);
 
-    // Initialize target fruits count based on daily seed
+    // Initialize Game Logic (Daily or Tutorial)
     useEffect(() => {
-        const rng = new SeededRNG(getDailySeed());
+        const hasPlayed = localStorage.getItem('snakle_has_played');
+        const isDebug = new URLSearchParams(window.location.search).get('debug') === 'true';
 
-        // Debug mode check
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('debug') === 'true') {
+        if (!hasPlayed && !isDebug) {
+            // Tutorial Mode
+            setIsTutorial(true);
             setTargetFruits(3);
+            setTotalKiwisToday(1);
+            setFruitSequence(Array.from({ length: 50 }, () => ({
+                x: Math.floor(Math.random() * GRID_SIZE),
+                y: Math.floor(Math.random() * GRID_SIZE)
+            })));
         } else {
-            const target = rng.nextInt(MIN_FRUITS, MAX_FRUITS);
-            setTargetFruits(target);
-            // Speed increment proportional to target fruits (more fruits = slower speed increase)
-            const increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / target));
-            setSpeedIncrement(increment);
-        }
+            // Daily Mode
+            const rng = new SeededRNG(getDailySeed());
 
-        // Generate deterministic fruit sequence
-        const sequence: Point[] = [];
-        // Generate enough fruits for a long game (e.g., 500)
-        for (let i = 0; i < 500; i++) {
-            sequence.push({
-                x: rng.nextInt(0, GRID_SIZE - 1),
-                y: rng.nextInt(0, GRID_SIZE - 1),
-            });
+            if (isDebug) {
+                setTargetFruits(3);
+                setTotalKiwisToday(1);
+            } else {
+                const target = rng.nextInt(MIN_FRUITS, MAX_FRUITS);
+                setTargetFruits(target);
+                const increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / target));
+                setSpeedIncrement(increment);
+
+                // Kiwi Logic: Every 3-5 days (approx 30% chance)
+                const isKiwiDay = rng.next() < 0.3;
+                if (isKiwiDay) {
+                    setTotalKiwisToday(rng.nextInt(1, 3));
+                } else {
+                    setTotalKiwisToday(0);
+                }
+            }
+
+            // Generate deterministic fruit sequence
+            const sequence: Point[] = [];
+            for (let i = 0; i < 500; i++) {
+                sequence.push({
+                    x: rng.nextInt(0, GRID_SIZE - 1),
+                    y: rng.nextInt(0, GRID_SIZE - 1),
+                });
+            }
+            setFruitSequence(sequence);
         }
-        setFruitSequence(sequence);
     }, []);
 
     // Timer logic
@@ -128,35 +150,45 @@ export const Game: React.FC = () => {
     useEffect(() => {
         if (gameState !== 'PLAYING') return;
 
-        // Check if we should spawn a kiwi (based on fruit index to be deterministic per game)
-        // Spawn at fruit index 5 and 12, if not already spawned
-        const shouldSpawnKiwi = (fruitIndex === 5 || fruitIndex === 12) && !kiwi;
+        // Check if we should spawn a kiwi
+        if (totalKiwisToday > 0 && !kiwi) {
+            const interval = Math.floor(targetFruits / (totalKiwisToday + 1));
+            let shouldSpawn = false;
 
-        if (shouldSpawnKiwi) {
-            let newKiwi: Point;
-            let attempts = 0;
-            while (attempts < 100) {
-                newKiwi = {
-                    x: Math.floor(Math.random() * GRID_SIZE),
-                    y: Math.floor(Math.random() * GRID_SIZE),
-                };
-                const onSnake = snake.some(s => s.x === newKiwi.x && s.y === newKiwi.y);
-                const onWall = walls.some(w => w.x === newKiwi.x && w.y === newKiwi.y);
-                const onFruit = fruit && fruit.x === newKiwi.x && fruit.y === newKiwi.y;
-
-                if (!onSnake && !onWall && !onFruit) {
-                    setKiwi(newKiwi);
-
-                    // Kiwi disappears after 5 seconds
-                    const timer = setTimeout(() => {
-                        setKiwi(null);
-                    }, 5000);
-                    return () => clearTimeout(timer);
+            for (let k = 1; k <= totalKiwisToday; k++) {
+                if (fruitIndex === interval * k) {
+                    shouldSpawn = true;
+                    break;
                 }
-                attempts++;
+            }
+
+            if (shouldSpawn && fruitIndex !== lastKiwiSpawnIndex) {
+                setLastKiwiSpawnIndex(fruitIndex);
+                // Spawn logic...
+                let newKiwi: Point;
+                let attempts = 0;
+                while (attempts < 100) {
+                    newKiwi = {
+                        x: Math.floor(Math.random() * GRID_SIZE),
+                        y: Math.floor(Math.random() * GRID_SIZE),
+                    };
+                    const onSnake = snake.some(s => s.x === newKiwi.x && s.y === newKiwi.y);
+                    const onWall = walls.some(w => w.x === newKiwi.x && w.y === newKiwi.y);
+                    const onFruit = fruit && fruit.x === newKiwi.x && fruit.y === newKiwi.y;
+
+                    if (!onSnake && !onWall && !onFruit) {
+                        setKiwi(newKiwi);
+                        const timer = setTimeout(() => {
+                            setKiwi(null);
+                        }, 5000);
+                        return () => clearTimeout(timer);
+                    }
+                    attempts++;
+                }
             }
         }
-    }, [fruitIndex, gameState, snake, walls, fruit, kiwi]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fruitIndex, gameState, snake, walls, fruit, kiwi, totalKiwisToday, lastKiwiSpawnIndex, targetFruits]);
 
     // Initial fruit
     useEffect(() => {
@@ -206,6 +238,9 @@ export const Game: React.FC = () => {
             // Check victory condition
             if (score + 1 >= targetFruits) {
                 setGameState('VICTORY');
+                if (isTutorial) {
+                    localStorage.setItem('snakle_has_played', 'true');
+                }
                 return;
             }
 
@@ -303,6 +338,20 @@ export const Game: React.FC = () => {
     const handleReplay = () => {
         // Replay without resetting score/lives/time
         resetSnake();
+        setFruitIndex(0); // Reset fruit sequence
+        setScore(0); // Reset score for replay? User said "allow replays without score reset" previously, but "once finished the game, can't replay" implies they want to start over?
+        // Actually, previous request was "allow replays without score reset". 
+        // But if they finished, they probably want to play again from scratch?
+        // "Play Again" usually means restart. 
+        // Let's assume they want to restart the level.
+        setScore(0);
+        setLives(0);
+        setElapsedTime(0);
+        setStartTime(null);
+        setKiwiCount(0);
+        setLastKiwiSpawnIndex(-1);
+        setKiwi(null);
+
         setGameState('COUNTDOWN');
         setCountdown(3);
         let count = 3;
@@ -338,9 +387,9 @@ export const Game: React.FC = () => {
                 <div className="flex items-center gap-2 text-green-400">
                     <span>🍎</span> {score}/{targetFruits}
                 </div>
-                {(kiwi || kiwiCount > 0) && (
+                {(totalKiwisToday > 0) && (
                     <div className="flex items-center gap-2 text-yellow-400">
-                        <span>🥝</span> {kiwiCount}
+                        <span>🥝</span> {kiwiCount}/{totalKiwisToday}
                     </div>
                 )}
                 <div className="flex items-center gap-2 text-blue-400">
@@ -355,9 +404,9 @@ export const Game: React.FC = () => {
                 {gameState === 'START' && (
                     <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 px-6">
                         <p className="text-gray-300 text-center text-sm md:text-base mb-6 max-w-md leading-relaxed whitespace-pre-line">
-                            Collect all {targetFruits} fruits. Teleport through walls!
+                            Collect all {targetFruits} fruits with least lives possible. You can teleport through walls.
                             <br /><br />
-                            <span className="text-yellow-400">New Controls:</span> Hold finger on screen and swipe to change direction.
+                            <span className="text-yellow-400">Controls:</span> Hold finger on screen and move around to change direction.
                         </p>
                         <button
                             onClick={startGame}
