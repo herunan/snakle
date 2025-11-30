@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useGameLoop } from '../hooks/useGameLoop';
 import { useSnake } from '../hooks/useSnake';
 import { useDailyLevel } from '../hooks/useDailyLevel';
