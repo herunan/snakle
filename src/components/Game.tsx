@@ -32,7 +32,7 @@ export const Game: React.FC = () => {
     const [lastKiwiSpawnIndex, setLastKiwiSpawnIndex] = useState(-1);
     const touchStartRef = React.useRef<{ x: number, y: number } | null>(null);
     const [classicHighScore, setClassicHighScore] = useState(0);
-    const [showWasted, setShowWasted] = useState(false);
+
 
     // Load Classic high score on mount
     useEffect(() => {
@@ -499,266 +499,271 @@ export const Game: React.FC = () => {
             setCountdown(count);
             if (count === 0) {
                 clearInterval(timer);
-                // Handle game mode switching with appropriate consequences
-                const handleModeSwitch = (newMode: 'DAILY' | 'TUTORIAL' | 'CLASSIC') => {
-                    // Confirm if playing
-                    if (gameState === 'PLAYING' && !confirm('Switch modes? This will end your current game.')) {
-                        return;
-                    }
+                setGameState('PLAYING');
+            }
+        }, 1000);
+    };
 
-                    // Handle consequences for leaving current mode
-                    if (gameMode === 'DAILY' && gameState === 'PLAYING') {
-                        // Switching from Daily costs a life
-                        const newLives = lives + 1;
-                        const today = getDailySeed();
-                        const state = { score, lives: newLives, elapsedTime, kiwiCount, completed: false };
-                        localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
-                    } else if (gameMode === 'CLASSIC' && score > classicHighScore) {
-                        // Save Classic high score if switching away
-                        setClassicHighScore(score);
-                        localStorage.setItem('snakle_classic_high_score', score.toString());
-                    }
-                    // Tutorial and Classic just reset (no special handling needed)
+    // Handle game mode switching with appropriate consequences
+    const handleModeSwitch = (newMode: 'DAILY' | 'TUTORIAL' | 'CLASSIC') => {
+        // Confirm if playing
+        if (gameState === 'PLAYING' && !confirm('Switch modes? This will end your current game.')) {
+            return;
+        }
 
-                    // Start new mode
-                    startGame(newMode);
-                };
+        // Handle consequences for leaving current mode
+        if (gameMode === 'DAILY' && gameState === 'PLAYING') {
+            // Switching from Daily costs a life
+            const newLives = lives + 1;
+            const today = getDailySeed();
+            const state = { score, lives: newLives, elapsedTime, kiwiCount, completed: false };
+            localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
+        } else if (gameMode === 'CLASSIC' && score > classicHighScore) {
+            // Save Classic high score if switching away
+            setClassicHighScore(score);
+            localStorage.setItem('snakle_classic_high_score', score.toString());
+        }
+        // Tutorial and Classic just reset (no special handling needed)
+
+        // Start new mode
+        startGame(newMode);
+    };
 
 
-                return (
-                    <div
-                        className="flex flex-col items-center justify-start h-screen w-screen bg-gray-900 text-white overflow-hidden touch-none select-none pt-8 pb-32"
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
-                    >
-                        {/* Title at top */}
-                        {/* Title at top - Removed mt-4 */}
-                        <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-2">
-                            SNAKLE
-                        </h1>
+    return (
+        <div
+            className="flex flex-col items-center justify-start h-screen w-screen bg-gray-900 text-white overflow-hidden touch-none select-none pt-8 pb-32"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+        >
+            {/* Title at top */}
+            {/* Title at top - Removed mt-4 */}
+            <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-2">
+                SNAKLE
+            </h1>
 
-                        {/* Mode Selection Buttons - Show when not on start screen */}
-                        {gameState !== 'START' && (
-                            <div className="flex gap-2 mb-4 text-xs">
-                                {gameMode !== 'DAILY' && (
-                                    <button
-                                        onClick={() => handleModeSwitch('DAILY')}
-                                        className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-white font-bold transition-all"
-                                    >
-                                        Daily
-                                    </button>
-                                )}
-                                {gameMode !== 'CLASSIC' && (
-                                    <button
-                                        onClick={() => handleModeSwitch('CLASSIC')}
-                                        className="px-3 py-1 bg-purple-600 hover:bg-purple-500 rounded text-white font-bold transition-all"
-                                    >
-                                        Classic
-                                    </button>
-                                )}
-                                {gameMode !== 'TUTORIAL' && (
-                                    <button
-                                        onClick={() => handleModeSwitch('TUTORIAL')}
-                                        className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded text-white font-bold transition-all"
-                                    >
-                                        Tutorial
-                                    </button>
-                                )}
-                            </div>
-                        )}
+            {/* Mode Selection Buttons - Show when not on start screen */}
+            {gameState !== 'START' && (
+                <div className="flex gap-2 mb-4 text-xs">
+                    {gameMode !== 'DAILY' && (
+                        <button
+                            onClick={() => handleModeSwitch('DAILY')}
+                            className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-white font-bold transition-all"
+                        >
+                            Daily
+                        </button>
+                    )}
+                    {gameMode !== 'CLASSIC' && (
+                        <button
+                            onClick={() => handleModeSwitch('CLASSIC')}
+                            className="px-3 py-1 bg-purple-600 hover:bg-purple-500 rounded text-white font-bold transition-all"
+                        >
+                            Classic
+                        </button>
+                    )}
+                    {gameMode !== 'TUTORIAL' && (
+                        <button
+                            onClick={() => handleModeSwitch('TUTORIAL')}
+                            className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded text-white font-bold transition-all"
+                        >
+                            Tutorial
+                        </button>
+                    )}
+                </div>
+            )}
 
-                        {/* Scoreboard - Lives left, Fruits middle, Time right */}
-                        {gameState !== 'START' && (
-                            <div className="mb-4 flex gap-6 md:gap-12 text-base md:text-lg font-bold font-mono">
-                                {gameMode !== 'CLASSIC' && (
-                                    <div className="flex items-center gap-2 text-red-400">
-                                        <span>❤️</span> {lives}
-                                    </div>
-                                )}
-                                {gameMode === 'CLASSIC' && classicHighScore > 0 && (
-                                    <div className="flex items-center gap-2 text-yellow-400">
-                                        <span>🏆</span> {classicHighScore}
-                                    </div>
-                                )}
-                                <div className="flex items-center gap-2 text-green-400">
-                                    <span>🍎</span> {gameMode === 'CLASSIC' ? score : `${score}/${targetFruits}`}
-                                </div>
-                                {(kiwisSpawnedSoFar > 0 || kiwi) && (
-                                    <div className="flex items-center gap-2 text-yellow-400">
-                                        <span>🥝</span> {gameMode === 'CLASSIC' ? kiwiCount : `${kiwiCount}/${kiwisSpawnedSoFar}`}
-                                    </div>
-                                )}
-                                {gameMode !== 'CLASSIC' && (
-                                    <div className="flex items-center gap-2 text-blue-400">
-                                        <span>⏱️</span> {formatTime(elapsedTime)}
-                                    </div>
-                                )}
-                            </div>
-                        )}
+            {/* Scoreboard - Lives left, Fruits middle, Time right */}
+            {gameState !== 'START' && (
+                <div className="mb-4 flex gap-6 md:gap-12 text-base md:text-lg font-bold font-mono">
+                    {gameMode !== 'CLASSIC' && (
+                        <div className="flex items-center gap-2 text-red-400">
+                            <span>❤️</span> {lives}
+                        </div>
+                    )}
+                    {gameMode === 'CLASSIC' && classicHighScore > 0 && (
+                        <div className="flex items-center gap-2 text-yellow-400">
+                            <span>🏆</span> {classicHighScore}
+                        </div>
+                    )}
+                    <div className="flex items-center gap-2 text-green-400">
+                        <span>🍎</span> {gameMode === 'CLASSIC' ? score : `${score}/${targetFruits}`}
+                    </div>
+                    {(kiwisSpawnedSoFar > 0 || kiwi) && (
+                        <div className="flex items-center gap-2 text-yellow-400">
+                            <span>🥝</span> {gameMode === 'CLASSIC' ? kiwiCount : `${kiwiCount}/${kiwisSpawnedSoFar}`}
+                        </div>
+                    )}
+                    {gameMode !== 'CLASSIC' && (
+                        <div className="flex items-center gap-2 text-blue-400">
+                            <span>⏱️</span> {formatTime(elapsedTime)}
+                        </div>
+                    )}
+                </div>
+            )}
 
-                        <div className="relative" style={{ filter: gameState === 'DEATH' ? 'grayscale(1)' : 'none' }}>
-                            <Board snake={snake} fruit={fruit} walls={walls} kiwi={kiwi} />
+            <div className="relative" style={{ filter: gameState === 'DEATH' ? 'grayscale(1)' : 'none' }}>
+                <Board snake={snake} fruit={fruit} walls={walls} kiwi={kiwi} />
 
-                            {/* Main Menu Button removed from here - now in title area */}
+                {/* Main Menu Button removed from here - now in title area */}
 
-                            {/* Start Screen */}
-                            {gameState === 'START' && (
-                                <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 px-6">
-                                    <p className="text-gray-300 text-left text-sm md:text-base mb-6 max-w-md leading-relaxed">
-                                        Eat the fruit without eating yourself. You can go through walls.
-                                        <br /><br />
-                                        <span className="text-yellow-400">Controls:</span>
-                                        <br />
-                                        📱 Hold finger on screen and move around
-                                        <br />
-                                        ⌨️ Arrow keys
-                                    </p>
+                {/* Start Screen */}
+                {gameState === 'START' && (
+                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 px-6">
+                        <p className="text-gray-300 text-left text-sm md:text-base mb-6 max-w-md leading-relaxed">
+                            Eat the fruit without eating yourself. You can go through walls.
+                            <br /><br />
+                            <span className="text-yellow-400">Controls:</span>
+                            <br />
+                            📱 Hold finger on screen and move around
+                            <br />
+                            ⌨️ Arrow keys
+                        </p>
 
-                                    <div className="flex flex-col gap-4 w-full max-w-xs">
-                                        <button
-                                            onClick={() => startGame('DAILY')}
-                                            className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2"
-                                        >
-                                            <Play size={24} /> Snakle Daily #{getDailyNumber()}
-                                        </button>
-                                        <div className="flex gap-3">
-                                            <button
-                                                onClick={() => startGame('CLASSIC')}
-                                                className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
-                                            >
-                                                Snakle Classic
-                                            </button>
-                                            <button
-                                                onClick={() => startGame('TUTORIAL')}
-                                                className="flex-1 py-3 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
-                                            >
-                                                Tutorial
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Countdown */}
-                            {gameState === 'COUNTDOWN' && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-20">
-                                    <div className="text-8xl font-bold text-white animate-bounce drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
-                                        {countdown}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Death Screen - WASTED */}
-                            {gameState === 'DEATH' && (
-                                <div
-                                    className="absolute inset-0 flex items-center justify-center z-20 cursor-pointer"
-                                    onClick={gameMode !== 'CLASSIC' ? handleDeathDismiss : undefined}
+                        <div className="flex flex-col gap-4 w-full max-w-xs">
+                            <button
+                                onClick={() => startGame('DAILY')}
+                                className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2"
+                            >
+                                <Play size={24} /> Snakle Daily #{getDailyNumber()}
+                            </button>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => startGame('CLASSIC')}
+                                    className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
                                 >
-                                    <div className="text-center">
-                                        <h2 className="text-5xl md:text-6xl font-bold text-red-400 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)]">
-                                            WASTED
-                                        </h2>
-                                        {gameMode === 'CLASSIC' ? (
-                                            <>
-                                                <p className="text-3xl md:text-4xl text-white font-bold mt-6">
-                                                    Score: {score}
-                                                </p>
-                                                <div className="flex gap-3 justify-center mt-6">
-                                                    <button
-                                                        onClick={handleShare}
-                                                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
-                                                    >
-                                                        <Share2 size={20} /> Share
-                                                    </button>
-                                                    <button
-                                                        onClick={handleDeathDismiss}
-                                                        className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
-                                                    >
-                                                        <Play size={20} /> Try Again
-                                                    </button>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <p className="text-green-400 text-sm md:text-base mt-4">Click or tap to continue</p>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
+                                    Snakle Classic
+                                </button>
+                                <button
+                                    onClick={() => startGame('TUTORIAL')}
+                                    className="flex-1 py-3 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
+                                >
+                                    Tutorial
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-                            {/* Victory Screen */}
-                            {gameState === 'VICTORY' && (
-                                <div className="absolute inset-0 bg-gradient-to-br from-green-900/95 to-blue-900/95 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 p-4">
-                                    <h1 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-3">
-                                        You ate all the fruit!
-                                    </h1>
-                                    <div className="text-center mb-4 space-y-2">
-                                        <p className="text-xl md:text-2xl font-bold text-white">
-                                            {gameMode === 'DAILY' ? `Snakle #${getDailyNumber()}` : gameMode === 'TUTORIAL' ? 'Tutorial' : 'Classic'} 🍎 {score}{kiwiCount > 0 ? ` 🥝 ${kiwiCount}` : ''}
-                                        </p>
-                                        {gameMode !== 'CLASSIC' && (
-                                            <>
-                                                <p className="text-base md:text-lg text-gray-300">
-                                                    ❤️ {lives} Live{lives !== 1 ? 's' : ''} Used
-                                                </p>
-                                                <p className="text-base md:text-lg text-gray-300">
-                                                    ⏱️ {formatTime(elapsedTime)}
-                                                </p>
-                                            </>
-                                        )}
+                {/* Countdown */}
+                {gameState === 'COUNTDOWN' && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-20">
+                        <div className="text-8xl font-bold text-white animate-bounce drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
+                            {countdown}
+                        </div>
+                    </div>
+                )}
+
+                {/* Death Screen - WASTED */}
+                {gameState === 'DEATH' && (
+                    <div
+                        className="absolute inset-0 flex items-center justify-center z-20 cursor-pointer"
+                        onClick={gameMode !== 'CLASSIC' ? handleDeathDismiss : undefined}
+                    >
+                        <div className="text-center">
+                            <h2 className="text-5xl md:text-6xl font-bold text-red-400 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)]">
+                                WASTED
+                            </h2>
+                            {gameMode === 'CLASSIC' ? (
+                                <>
+                                    <p className="text-3xl md:text-4xl text-white font-bold mt-6">
+                                        Score: {score}
+                                    </p>
+                                    <div className="flex gap-3 justify-center mt-6">
+                                        <button
+                                            onClick={handleShare}
+                                            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
+                                        >
+                                            <Share2 size={20} /> Share
+                                        </button>
+                                        <button
+                                            onClick={handleDeathDismiss}
+                                            className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
+                                        >
+                                            <Play size={20} /> Try Again
+                                        </button>
                                     </div>
-                                    <div className="flex flex-col gap-2 items-center">
-                                        <div className="flex gap-3">
-                                            {gameMode !== 'TUTORIAL' && (
-                                                <button
-                                                    onClick={handleShare}
-                                                    className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30"
-                                                >
-                                                    <Share2 size={20} /> Share
-                                                </button>
-                                            )}
-                                            {gameMode === 'CLASSIC' && (
-                                                <button
-                                                    onClick={handleReplay}
-                                                    className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
-                                                >
-                                                    <Play size={18} /> Play Again
-                                                </button>
-                                            )}
-                                            {gameMode === 'DAILY' && (
-                                                <button
-                                                    onClick={() => startGame('CLASSIC')}
-                                                    className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
-                                                >
-                                                    <Play size={18} /> Play Classic
-                                                </button>
-                                            )}
-                                            {gameMode === 'TUTORIAL' && (
-                                                <>
-                                                    <button
-                                                        onClick={() => startGame('CLASSIC')}
-                                                        className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
-                                                    >
-                                                        <Play size={18} /> Play Classic
-                                                    </button>
-                                                    <button
-                                                        onClick={() => startGame('DAILY')}
-                                                        className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
-                                                    >
-                                                        <Play size={18} /> Play Daily
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                        {gameMode === 'DAILY' && (
-                                            <p className="text-sm text-gray-400 mt-2">
-                                                Next Snakle in {getTimeToNextPuzzle()}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
+                                </>
+                            ) : (
+                                <p className="text-green-400 text-sm md:text-base mt-4">Click or tap to continue</p>
                             )}
                         </div>
                     </div>
-                );
-            };
+                )}
+
+                {/* Victory Screen */}
+                {gameState === 'VICTORY' && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-900/95 to-blue-900/95 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 p-4">
+                        <h1 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-3">
+                            You ate all the fruit!
+                        </h1>
+                        <div className="text-center mb-4 space-y-2">
+                            <p className="text-xl md:text-2xl font-bold text-white">
+                                {gameMode === 'DAILY' ? `Snakle #${getDailyNumber()}` : gameMode === 'TUTORIAL' ? 'Tutorial' : 'Classic'} 🍎 {score}{kiwiCount > 0 ? ` 🥝 ${kiwiCount}` : ''}
+                            </p>
+                            {gameMode !== 'CLASSIC' && (
+                                <>
+                                    <p className="text-base md:text-lg text-gray-300">
+                                        ❤️ {lives} Live{lives !== 1 ? 's' : ''} Used
+                                    </p>
+                                    <p className="text-base md:text-lg text-gray-300">
+                                        ⏱️ {formatTime(elapsedTime)}
+                                    </p>
+                                </>
+                            )}
+                        </div>
+                        <div className="flex flex-col gap-2 items-center">
+                            <div className="flex gap-3">
+                                {gameMode !== 'TUTORIAL' && (
+                                    <button
+                                        onClick={handleShare}
+                                        className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30"
+                                    >
+                                        <Share2 size={20} /> Share
+                                    </button>
+                                )}
+                                {gameMode === 'CLASSIC' && (
+                                    <button
+                                        onClick={handleReplay}
+                                        className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
+                                    >
+                                        <Play size={18} /> Play Again
+                                    </button>
+                                )}
+                                {gameMode === 'DAILY' && (
+                                    <button
+                                        onClick={() => startGame('CLASSIC')}
+                                        className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
+                                    >
+                                        <Play size={18} /> Play Classic
+                                    </button>
+                                )}
+                                {gameMode === 'TUTORIAL' && (
+                                    <>
+                                        <button
+                                            onClick={() => startGame('CLASSIC')}
+                                            className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
+                                        >
+                                            <Play size={18} /> Play Classic
+                                        </button>
+                                        <button
+                                            onClick={() => startGame('DAILY')}
+                                            className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
+                                        >
+                                            <Play size={18} /> Play Daily
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                            {gameMode === 'DAILY' && (
+                                <p className="text-sm text-gray-400 mt-2">
+                                    Next Snakle in {getTimeToNextPuzzle()}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
