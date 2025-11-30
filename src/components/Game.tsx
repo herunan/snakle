@@ -72,7 +72,7 @@ export const Game: React.FC = () => {
         const handleBeforeUnload = () => {
             const { gameMode, gameState, score, lives, elapsedTime, kiwiCount } = stateRef.current;
 
-            if (gameMode === 'DAILY' && gameState === 'PLAYING') {
+            if (gameMode === 'DAILY' && (gameState === 'PLAYING' || gameState === 'COUNTDOWN')) {
                 const today = getDailySeed();
                 const state = {
                     score,
@@ -304,7 +304,7 @@ export const Game: React.FC = () => {
     // Initial fruit
     useEffect(() => {
         if (!fruit && walls.length > 0 && fruitSequence.length > 0) spawnFruit();
-    }, [walls, fruitSequence]);
+    }, [walls, fruitSequence, spawnFruit]);
 
     // Start Game Sequence
     // Start Game Sequence
