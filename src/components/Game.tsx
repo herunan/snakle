@@ -560,6 +560,11 @@ export const Game: React.FC = () => {
                             <span>❤️</span> {lives}
                         </div>
                     )}
+                    {gameMode === 'CLASSIC' && classicHighScore > 0 && (
+                        <div className="flex items-center gap-2 text-yellow-400">
+                            <span>🏆</span> {classicHighScore}
+                        </div>
+                    )}
                     <div className="flex items-center gap-2 text-green-400">
                         <span>🍎</span> {gameMode === 'CLASSIC' ? score : `${score}/${targetFruits}`}
                     </div>
@@ -592,12 +597,6 @@ export const Game: React.FC = () => {
                             📱 Hold finger on screen and move around
                             <br />
                             ⌨️ Arrow keys
-                            {gameMode === 'CLASSIC' && classicHighScore > 0 && (
-                                <>
-                                    <br /><br />
-                                    <span className="text-green-400">High Score: {classicHighScore}</span>
-                                </>
-                            )}
                         </p>
 
                         <div className="flex flex-col gap-4 w-full max-w-xs">
