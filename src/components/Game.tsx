@@ -780,37 +780,23 @@ export const Game: React.FC = () => {
                             )}
                         </div>
                     </div>
-                    </div>
-                )}
-        </div>
-
-            {/* Main Menu Confirmation Dialog */ }
-    {
-        showMainMenuConfirm && (
-            <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-50 rounded-lg">
-                <div className="bg-gray-800 p-6 rounded-lg max-w-sm mx-4 text-center">
-                    <h2 className="text-xl font-bold text-white mb-3">Return to Main Menu?</h2>
-                    <p className="text-gray-300 text-sm mb-4">
-                        {gameMode === 'CLASSIC'
-                            ? "You will lose all progress!"
-                            : "This will use a life!"}
                     </p>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => setShowMainMenuConfirm(false)}
-                            className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-white font-bold transition-all"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={returnToMainMenu}
-                            className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 rounded text-white font-bold transition-all"
-                        >
-                            Confirm
-                        </button>
-                    </div>
-                </div>
+            <div className="flex gap-3">
+                <button
+                    onClick={() => setShowMainMenuConfirm(false)}
+                    className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-white font-bold transition-all"
+                >
+                    Cancel
+                </button>
+                <button
+                    onClick={returnToMainMenu}
+                    className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 rounded text-white font-bold transition-all"
+                >
+                    Confirm
+                </button>
             </div>
+        </div>
+            </div >
         )
     }
 
