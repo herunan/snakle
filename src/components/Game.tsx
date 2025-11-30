@@ -31,7 +31,50 @@ export const Game: React.FC = () => {
     const [kiwisSpawnedSoFar, setKiwisSpawnedSoFar] = useState(0);
     const [lastKiwiSpawnIndex, setLastKiwiSpawnIndex] = useState(-1);
     const touchStartRef = React.useRef<{ x: number, y: number } | null>(null);
+    const [classicHighScore, setClassicHighScore] = useState(0);
+    const [showMainMenuConfirm, setShowMainMenuConfirm] = useState(false);
 
+    // Load Classic high score on mount
+    useEffect(() => {
+        const savedHighScore = localStorage.getItem('snakle_classic_high_score');
+        if (savedHighScore) {
+            setClassicHighScore(parseInt(savedHighScore, 10));
+        }
+    }, []);
+
+    // Save/Load Daily game state
+    useEffect(() => {
+        if (gameMode === 'DAILY') {
+            const today = getDailySeed();
+            const savedState = localStorage.getItem(`snakle_daily_${today}`);
+
+            if (savedState && gameState === 'START') {
+                const state = JSON.parse(savedState);
+                // Restore state if not completed
+                if (!state.completed) {
+                    setScore(state.score || 0);
+                    setLives(state.lives || 0);
+                    setElapsedTime(state.elapsedTime || 0);
+                    setKiwiCount(state.kiwiCount || 0);
+                }
+            }
+        }
+    }, [gameMode, gameState]);
+
+    // Save Daily state on changes
+    useEffect(() => {
+        if (gameMode === 'DAILY' && gameState === 'PLAYING') {
+            const today = getDailySeed();
+            const state = {
+                score,
+                lives,
+                elapsedTime,
+                kiwiCount,
+                completed: false
+            };
+            localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
+        }
+    }, [score, lives, elapsedTime, kiwiCount, gameMode, gameState]);
 
     // Initialize Game Logic based on Mode
     useEffect(() => {
@@ -297,6 +340,11 @@ export const Game: React.FC = () => {
                 setGameState('VICTORY');
                 if (gameMode === 'TUTORIAL') {
                     localStorage.setItem('snakle_has_played', 'true');
+                } else if (gameMode === 'DAILY') {
+                    // Mark Daily as completed
+                    const today = getDailySeed();
+                    const state = { score: score + 1, lives, elapsedTime, kiwiCount, completed: true };
+                    localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
                 }
                 return;
             }
@@ -308,6 +356,12 @@ export const Game: React.FC = () => {
         if (walls.some(w => w.x === head.x && w.y === head.y)) {
             setLives(l => l + 1);
             setGameState('DEATH');
+            // Mark Daily as completed on death
+            if (gameMode === 'DAILY') {
+                const today = getDailySeed();
+                const state = { score, lives: lives + 1, elapsedTime, kiwiCount, completed: true };
+                localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
+            }
         }
 
         // Check Kiwi
@@ -321,6 +375,13 @@ export const Game: React.FC = () => {
 
     // Handle death screen dismissal and restart
     const handleDeathDismiss = () => {
+        if (gameMode === 'DAILY') {
+            // Daily mode: cannot restart, only go to main menu
+            setGameState('START');
+            resetSnake();
+            return;
+        }
+
         resetSnake();
         setGameState('COUNTDOWN');
         setCountdown(3);
@@ -411,12 +472,7 @@ export const Game: React.FC = () => {
     const handleReplay = () => {
         // Replay without resetting score/lives/time
         resetSnake();
-        setFruitIndex(0); // Reset fruit sequence
-        setScore(0); // Reset score for replay? User said "allow replays without score reset" previously, but "once finished the game, can't replay" implies they want to start over?
-        // Actually, previous request was "allow replays without score reset". 
-        // But if they finished, they probably want to play again from scratch?
-        // "Play Again" usually means restart. 
-        // Let's assume they want to restart the level.
+        setFruitIndex(0);
         setScore(0);
         setLives(0);
         setElapsedTime(0);
@@ -436,6 +492,40 @@ export const Game: React.FC = () => {
                 setGameState('PLAYING');
             }
         }, 1000);
+    };
+
+    const handleMainMenu = () => {
+        if (gameState === 'PLAYING') {
+            setShowMainMenuConfirm(true);
+        } else {
+            returnToMainMenu();
+        }
+    };
+
+    const returnToMainMenu = () => {
+        setShowMainMenuConfirm(false);
+
+        if (gameMode === 'DAILY' && gameState === 'PLAYING') {
+            // Increment lives when abandoning Daily game
+            setLives(l => l + 1);
+            const today = getDailySeed();
+            const state = { score, lives: lives + 1, elapsedTime, kiwiCount, completed: false };
+            localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
+        }
+
+        if (gameMode === 'CLASSIC' && score > classicHighScore) {
+            setClassicHighScore(score);
+            localStorage.setItem('snakle_classic_high_score', score.toString());
+        }
+
+        setGameState('START');
+        setScore(0);
+        setLives(0);
+        setElapsedTime(0);
+        setStartTime(null);
+        setKiwi(null);
+        setKiwiCount(0);
+        resetSnake();
     };
 
 
@@ -479,6 +569,16 @@ export const Game: React.FC = () => {
             <div className="relative">
                 <Board snake={snake} fruit={fruit} walls={walls} kiwi={kiwi} />
 
+                {/* Main Menu Button - Always visible during gameplay */}
+                {gameState === 'PLAYING' && (
+                    <button
+                        onClick={handleMainMenu}
+                        className="absolute top-4 right-4 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white transition-all z-30"
+                    >
+                        Main Menu
+                    </button>
+                )}
+
                 {/* Start Screen */}
                 {gameState === 'START' && (
                     <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 px-6">
@@ -490,6 +590,12 @@ export const Game: React.FC = () => {
                             📱 Hold finger on screen and move around
                             <br />
                             ⌨️ Arrow keys
+                            {gameMode === 'CLASSIC' && classicHighScore > 0 && (
+                                <>
+                                    <br /><br />
+                                    <span className="text-green-400">High Score: {classicHighScore}</span>
+                                </>
+                            )}
                         </p>
 
                         <div className="flex flex-col gap-4 w-full max-w-xs">
@@ -523,6 +629,12 @@ export const Game: React.FC = () => {
                         <div className="text-8xl font-bold text-white animate-bounce drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
                             {countdown}
                         </div>
+                        <button
+                            onClick={handleMainMenu}
+                            className="absolute top-4 right-4 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white transition-all z-30"
+                        >
+                            Main Menu
+                        </button>
                     </div>
                 )}
 
@@ -538,6 +650,15 @@ export const Game: React.FC = () => {
                             </h2>
                             <p className="text-white/60 text-sm md:text-base mt-4">Click or tap to continue</p>
                         </div>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleMainMenu();
+                            }}
+                            className="absolute top-4 right-4 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white transition-all z-30"
+                        >
+                            Main Menu
+                        </button>
                     </div>
                 )}
 
@@ -567,34 +688,57 @@ export const Game: React.FC = () => {
                                     <Share2 size={20} /> Share
                                 </button>
                             )}
+                            {gameMode !== 'DAILY' && (
+                                <button
+                                    onClick={handleReplay}
+                                    className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
+                                >
+                                    <Play size={18} /> Play Again
+                                </button>
+                            )}
                             <button
-                                onClick={handleReplay}
-                                className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
-                            >
-                                <Play size={18} /> Play Again
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setGameState('START');
-                                    setScore(0);
-                                    setLives(0);
-                                    setElapsedTime(0);
-                                    setStartTime(null);
-                                    setKiwi(null);
-                                    setKiwiCount(0);
-                                    resetSnake();
-                                }}
+                                onClick={handleMainMenu}
                                 className="text-xs text-gray-400 hover:text-white underline"
                             >
                                 Main Menu
                             </button>
-                            <p className="text-xs text-gray-400 mt-1">
-                                Next Snakle in {getTimeToNextPuzzle()}
-                            </p>
+                            {gameMode === 'DAILY' && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                    Next Snakle in {getTimeToNextPuzzle()}
+                                </p>
+                            )}
                         </div>
                     </div>
                 )}
             </div>
+
+            {/* Main Menu Confirmation Dialog */}
+            {showMainMenuConfirm && (
+                <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-50 rounded-lg">
+                    <div className="bg-gray-800 p-6 rounded-lg max-w-sm mx-4 text-center">
+                        <h2 className="text-xl font-bold text-white mb-3">Return to Main Menu?</h2>
+                        <p className="text-gray-300 text-sm mb-4">
+                            {gameMode === 'CLASSIC'
+                                ? "You will lose all progress!"
+                                : "This will use a life!"}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowMainMenuConfirm(false)}
+                                className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-white font-bold transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={returnToMainMenu}
+                                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 rounded text-white font-bold transition-all"
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );
