@@ -311,6 +311,11 @@ export const Game: React.FC = () => {
     const startGame = (mode: 'DAILY' | 'TUTORIAL' | 'CLASSIC') => {
         setGameMode(mode);
 
+        // Reset fruit state immediately to prevent transfer
+        setFruit(null);
+        setFruitSequence([]);
+        setFruitIndex(0);
+
         // Always reset snake to default state (position, size, speed)
         resetSnake();
         setSpeed(INITIAL_SPEED);
