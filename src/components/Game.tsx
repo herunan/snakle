@@ -603,7 +603,7 @@ export const Game: React.FC = () => {
                                 onClick={() => startGame('DAILY')}
                                 className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2"
                             >
-                                <Play size={24} /> Daily Challenge
+                                <Play size={24} /> Snakle Daily #{getDailySeed()}
                             </button>
                             <div className="flex gap-3">
                                 <button
