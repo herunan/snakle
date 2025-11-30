@@ -548,18 +548,47 @@ export const Game: React.FC = () => {
         >
             {/* Title at top */}
             {/* Title at top - Removed mt-4 */}
-            <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-2">
                 SNAKLE
             </h1>
 
-            {/* Main Menu Button - Top Right */}
+            {/* Mode Selection Buttons - Show when not on start screen */}
             {gameState !== 'START' && (
-                <button
-                    onClick={handleMainMenu}
-                    className="absolute top-0 right-4 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white transition-all z-30"
-                >
-                    Main Menu
-                </button>
+                <div className="flex gap-2 mb-4 text-xs">
+                    {gameMode !== 'DAILY' && (
+                        <button
+                            onClick={() => {
+                                if (gameState === 'PLAYING' && !confirm('Switch to Daily mode? This will end your current game.')) return;
+                                startGame('DAILY');
+                            }}
+                            className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-white font-bold transition-all"
+                        >
+                            Daily
+                        </button>
+                    )}
+                    {gameMode !== 'CLASSIC' && (
+                        <button
+                            onClick={() => {
+                                if (gameState === 'PLAYING' && !confirm('Switch to Classic mode? This will end your current game.')) return;
+                                startGame('CLASSIC');
+                            }}
+                            className="px-3 py-1 bg-purple-600 hover:bg-purple-500 rounded text-white font-bold transition-all"
+                        >
+                            Classic
+                        </button>
+                    )}
+                    {gameMode !== 'TUTORIAL' && (
+                        <button
+                            onClick={() => {
+                                if (gameState === 'PLAYING' && !confirm('Switch to Tutorial mode? This will end your current game.')) return;
+                                startGame('TUTORIAL');
+                            }}
+                            className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded text-white font-bold transition-all"
+                        >
+                            Tutorial
+                        </button>
+                    )}
+                </div>
             )}
 
             {/* Scoreboard - Lives left, Fruits middle, Time right */}
