@@ -60,6 +60,35 @@ export const Game: React.FC = () => {
         }
     }, [score, lives, elapsedTime, kiwiCount, gameMode, gameState]);
 
+    // Ref to hold current state for beforeunload event
+    const stateRef = useRef({ gameMode, gameState, score, lives, elapsedTime, kiwiCount });
+
+    useEffect(() => {
+        stateRef.current = { gameMode, gameState, score, lives, elapsedTime, kiwiCount };
+    }, [gameMode, gameState, score, lives, elapsedTime, kiwiCount]);
+
+    // Handle page unload/refresh for Daily mode
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            const { gameMode, gameState, score, lives, elapsedTime, kiwiCount } = stateRef.current;
+
+            if (gameMode === 'DAILY' && gameState === 'PLAYING') {
+                const today = getDailySeed();
+                const state = {
+                    score,
+                    lives: lives + 1, // Increment lives on refresh/exit
+                    elapsedTime,
+                    kiwiCount,
+                    completed: false
+                };
+                localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, []);
+
     // Initialize Game Logic based on Mode
     useEffect(() => {
         const isDebug = new URLSearchParams(window.location.search).get('debug') === 'true';
