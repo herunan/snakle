@@ -374,9 +374,7 @@ export const Game: React.FC = () => {
             // Check victory condition (Only for non-Classic modes)
             if (gameMode !== 'CLASSIC' && score + 1 >= targetFruits) {
                 setGameState('VICTORY');
-                if (gameMode === 'TUTORIAL') {
-                    localStorage.setItem('snakle_has_played', 'true');
-                } else if (gameMode === 'DAILY') {
+                if (gameMode === 'DAILY') {
                     // Mark Daily as completed
                     const today = getDailySeed();
                     const state = { score: score + 1, lives, elapsedTime, kiwiCount, completed: true };
@@ -499,8 +497,8 @@ export const Game: React.FC = () => {
             }
             text += `\nhttps://snakle.surge.sh`;
         } else {
-            // Daily/Tutorial mode
-            text = `🐍 Snakle •${isMobile ? '📱' : ' ⌨️ '}${isMobile ? 'Hard' : 'Easy'}\n❤️ ${lives}\n⏱️ ${formatTime(elapsedTime)}`;
+            // Daily mode
+            text = `🐍 Snakle #${getDailyNumber()} •${isMobile ? '📱' : ' ⌨️ '}${isMobile ? 'Hard' : 'Easy'}\n❤️ ${lives}\n⏱️ ${formatTime(elapsedTime)}`;
             if (kiwiCount > 0) {
                 text += `\n🥝 ${kiwiCount}`;
             }
@@ -585,8 +583,8 @@ export const Game: React.FC = () => {
                     <button
                         onClick={() => handleModeSwitch(gameMode === 'DAILY' ? 'CLASSIC' : 'DAILY')}
                         className={`px-3 py-1 rounded text-white font-bold transition-all text-xs ${gameMode === 'DAILY'
-                                ? 'bg-purple-600 hover:bg-purple-500'
-                                : 'bg-blue-600 hover:bg-blue-500'
+                            ? 'bg-purple-600 hover:bg-purple-500'
+                            : 'bg-blue-600 hover:bg-blue-500'
                             }`}
                     >
                         {gameMode === 'DAILY' ? 'Play Classic' : 'Play Daily'}
@@ -657,8 +655,8 @@ export const Game: React.FC = () => {
                         <button
                             onClick={() => startGame(gameMode)}
                             className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2 ${gameMode === 'DAILY'
-                                    ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/30'
-                                    : 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30'
+                                ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/30'
+                                : 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30'
                                 }`}
                         >
                             <Play size={24} /> Play {gameMode === 'DAILY' ? 'Daily' : 'Classic'}
