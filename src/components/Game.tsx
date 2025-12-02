@@ -23,7 +23,6 @@ export const Game: React.FC = () => {
     const [targetFruits, setTargetFruits] = useState(0);
     const [startTime, setStartTime] = useState<number | null>(null);
     const [elapsedTime, setElapsedTime] = useState(0);
-    const [speedIncrement, setSpeedIncrement] = useState(SPEED_DECREMENT);
     const isMobile = typeof window !== 'undefined' && /Mobi|Android/i.test(navigator.userAgent);
     const [fruitIndex, setFruitIndex] = useState(0);
     const [fruitSequence, setFruitSequence] = useState<Point[]>([]);
@@ -188,11 +187,6 @@ export const Game: React.FC = () => {
         }
     }, [gameState, startTime]);
 
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    };
 
     const getTimeToNextPuzzle = () => {
         const now = new Date();
@@ -619,14 +613,14 @@ export const Game: React.FC = () => {
             const isNewPB = isNewPersonalBest;
             text = `🐍 Snakle Classic •${deviceTag}\n🍎${isNewPB ? '🏆' : ''} ${classicScore}`;
             text += `\nhttps://snakle.surge.sh`;
-            text += `\nhttps://snakle.surge.sh`;
+            text += `\n${(window as any).SHARE_URL || 'https://snakle.surge.sh'}`;
         } else {
             // Daily mode - Removed timer
             text = `🐍 Snakle #${getDailyNumber()} •${isMobile ? '📱' : ' ⌨️ '}${isMobile ? 'Hard' : 'Easy'}\n❤️ ${lives}`;
             if (kiwiCount > 0) {
                 text += `\n🥝 ${kiwiCount}`;
             }
-            text += `\nhttps://snakle.surge.sh`;
+            text += `\n${(window as any).SHARE_URL || 'https://snakle.surge.sh'}`;
         }
 
         try {
