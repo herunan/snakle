@@ -764,32 +764,18 @@ export const Game: React.FC = () => {
                                         <Play size={18} /> Play Classic
                                     </button>
                                 )}
-                                {gameMode === 'TUTORIAL' && (
-                                    <>
-                                        <button
-                                            onClick={() => startGame('CLASSIC')}
-                                            className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
-                                        >
-                                            <Play size={18} /> Play Classic
-                                        </button>
-                                        <button
-                                            onClick={() => startGame('DAILY')}
-                                            className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
-                                        >
-                                            <Play size={18} /> Play Daily
-                                        </button>
-                                    </>
+                            </button>
                                 )}
-                            </div>
-                            {gameMode === 'DAILY' && (
-                                <p className="text-sm text-gray-400 mt-2">
-                                    Next Snakle in {getTimeToNextPuzzle()}
-                                </p>
-                            )}
                         </div>
+                        {gameMode === 'DAILY' && (
+                            <p className="text-sm text-gray-400 mt-2">
+                                Next Snakle in {getTimeToNextPuzzle()}
+                            </p>
+                        )}
+                    </div>
                     </div>
                 )}
-            </div>
         </div>
+        </div >
     );
 };
