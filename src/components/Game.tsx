@@ -620,9 +620,11 @@ export const Game: React.FC = () => {
         setElapsedTime(0);
         setStartTime(null);
         setKiwiCount(0);
+        setClassicScore(0);
+        setGameState('START');
 
-        // Start the new game mode
-        startGame(newMode);
+        // Update the mode (this will trigger start screen to appear)
+        setGameMode(newMode);
     };
 
 
@@ -742,21 +744,21 @@ export const Game: React.FC = () => {
                             {gameMode === 'CLASSIC' ? (
                                 <>
                                     <h1 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-6">
-                                        {isNewPersonalBest ? 'NEW PERSONAL BEST!' : 'GAME OVER'}
+                                        {isNewPersonalBest ? 'NEW HIGH SCORE!' : 'GAME OVER'}
                                     </h1>
                                     <p className="text-3xl md:text-4xl text-white font-bold mb-8">
                                         🍎 {classicScore}
                                     </p>
-                                    <div className="flex flex-col gap-3 justify-center mt-6">
+                                    <div className="flex flex-col gap-3 justify-center mt-6 w-full px-8">
                                         <button
                                             onClick={handleShare}
-                                            className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
+                                            className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-500 rounded-full text-lg font-bold transition-all transform hover:scale-105 w-full"
                                         >
                                             <Share2 size={20} /> Share score
                                         </button>
                                         <button
                                             onClick={() => startGame('CLASSIC')}
-                                            className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-full text-lg font-bold transition-all transform hover:scale-105 w-full max-w-xs"
+                                            className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-full text-lg font-bold transition-all transform hover:scale-105 w-full"
                                         >
                                             <Play size={20} /> Try again
                                         </button>
