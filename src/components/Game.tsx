@@ -351,6 +351,12 @@ export const Game: React.FC = () => {
             // Died - Show WASTED screen
             setLives(l => l + 1);
             setGameState('DEATH');
+            // Save state on death (completed: false so it can be resumed)
+            if (gameMode === 'DAILY') {
+                const today = getDailySeed();
+                const state = { score, lives: lives + 1, elapsedTime, kiwiCount, completed: false };
+                localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
+            }
             return;
         }
 
@@ -385,10 +391,10 @@ export const Game: React.FC = () => {
         if (walls.some(w => w.x === head.x && w.y === head.y)) {
             setLives(l => l + 1);
             setGameState('DEATH');
-            // Mark Daily as completed on death
+            // Mark Daily as NOT completed on death, so it can be resumed
             if (gameMode === 'DAILY') {
                 const today = getDailySeed();
-                const state = { score, lives: lives + 1, elapsedTime, kiwiCount, completed: true };
+                const state = { score, lives: lives + 1, elapsedTime, kiwiCount, completed: false };
                 localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
             }
         }
@@ -549,9 +555,11 @@ export const Game: React.FC = () => {
         }
 
         // Handle consequences for leaving current mode
-        if (gameMode === 'DAILY' && gameState === 'PLAYING') {
+        if (gameMode === 'DAILY' && (gameState === 'PLAYING' || gameState === 'DEATH')) {
             // Save state (penalty applied on resume)
             const today = getDailySeed();
+            // If in DEATH, lives were already incremented, so use current lives
+            // If in PLAYING, use current lives (penalty added on resume)
             const state = { score, lives, elapsedTime, kiwiCount, completed: false };
             localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
         } else if (gameMode === 'CLASSIC' && score > classicHighScore) {
