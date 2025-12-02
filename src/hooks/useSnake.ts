@@ -17,6 +17,8 @@ export function useSnake() {
     const moveSnake = useCallback(() => {
         if (!isAlive) return;
 
+        let moveDirection = direction;
+
         // Process queued direction before moving
         if (directionQueue.length > 0) {
             const nextDir = directionQueue[0];
@@ -27,6 +29,7 @@ export function useSnake() {
                 (nextDir === 'RIGHT' && direction === 'LEFT');
 
             if (!isOpposite) {
+                moveDirection = nextDir;
                 setDirection(nextDir);
             }
             setDirectionQueue(prev => prev.slice(1));
@@ -35,8 +38,8 @@ export function useSnake() {
         setSnake((prevSnake) => {
             const head = prevSnake[0];
             const newHead = {
-                x: head.x + DIRECTIONS[direction].x,
-                y: head.y + DIRECTIONS[direction].y,
+                x: head.x + DIRECTIONS[moveDirection].x,
+                y: head.y + DIRECTIONS[moveDirection].y,
             };
 
             // Wall Wrapping

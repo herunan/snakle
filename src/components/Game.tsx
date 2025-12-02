@@ -461,8 +461,10 @@ export const Game: React.FC = () => {
 
             if (gameMode === 'CLASSIC') {
                 setClassicScore(s => s + 1);
-                // Speed based on tail length (capped at 20 segments)
-                const newSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - (Math.min(snake.length, 20) * speedIncrement));
+                // Speed based on score, capping at MIN_SPEED (50ms)
+                // Start at 150, decrease by 2 per fruit. To reach 50, we need 50 fruits.
+                // Math.max(50, 150 - (score * 2))
+                const newSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - (s * 2));
                 setSpeed(newSpeed);
             } else {
                 // Daily: Speed based on apple score
@@ -614,9 +616,10 @@ export const Game: React.FC = () => {
             const isNewPB = isNewPersonalBest;
             text = `🐍 Snakle Classic •${deviceTag}\n🍎${isNewPB ? '🏆' : ''} ${classicScore}`;
             text += `\nhttps://snakle.surge.sh`;
+            text += `\nhttps://snakle.surge.sh`;
         } else {
-            // Daily mode
-            text = `🐍 Snakle #${getDailyNumber()} •${isMobile ? '📱' : ' ⌨️ '}${isMobile ? 'Hard' : 'Easy'}\n❤️ ${lives}\n⏱️ ${formatTime(elapsedTime)}`;
+            // Daily mode - Removed timer
+            text = `🐍 Snakle #${getDailyNumber()} •${isMobile ? '📱' : ' ⌨️ '}${isMobile ? 'Hard' : 'Easy'}\n❤️ ${lives}`;
             if (kiwiCount > 0) {
                 text += `\n🥝 ${kiwiCount}`;
             }
@@ -690,6 +693,12 @@ export const Game: React.FC = () => {
         setFruitIndex(0);
         setKiwisSpawnedSoFar(0);
         setLastKiwiSpawnIndex(-1);
+
+        // Clear snake and fruit state immediately to prevent flicker
+        setSnake([]);
+        setFruit(null);
+        setKiwi(null);
+
         resetSnake();
         setGameState('START');
 
@@ -781,7 +790,7 @@ export const Game: React.FC = () => {
                             <span>🥝</span> {`${kiwiCount}/${kiwisSpawnedSoFar}`}
                         </div>
                     )}
-                    {gameMode !== 'CLASSIC' && (
+                    {gameMode === 'CLASSIC' && (
                         <div className="flex items-center gap-2 text-blue-400">
                             <span>⏱️</span> {formatTime(elapsedTime)}
                         </div>
@@ -850,7 +859,7 @@ export const Game: React.FC = () => {
                             {gameMode === 'CLASSIC' ? (
                                 <>
                                     <h1 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-6">
-                                        {isNewPersonalBest ? 'NEW HIGH SCORE!' : 'GAME OVER'}
+                                        {isNewPersonalBest ? 'New High Score!' : 'GAME OVER'}
                                     </h1>
                                     <p className="text-3xl md:text-4xl text-white font-bold mb-8">
                                         🍎 {classicScore}
@@ -893,8 +902,9 @@ export const Game: React.FC = () => {
                                 ❤️ {lives} lives used
                             </p>
                             <p className="text-xl md:text-2xl text-gray-300">
-                                ⏱️ {formatTime(elapsedTime)}
+                                ❤️ {lives} lives used
                             </p>
+                            {/* Timer removed for Daily Victory */}
                         </div>
                         <div className="flex flex-col gap-3 items-center">
                             <button
