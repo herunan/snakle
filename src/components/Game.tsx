@@ -850,6 +850,54 @@ export const Game: React.FC = () => {
                         )}
                     </div>
                 )}
+
+                {/* Mobile Controls - 4-Way Joystick */}
+                {gameState === 'PLAYING' && (
+                    <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
+                        <div className="relative w-40 h-40">
+                            {/* Up button */}
+                            <button
+                                onTouchStart={(e) => {
+                                    e.preventDefault();
+                                    changeDirection('UP');
+                                }}
+                                className="absolute top-0 left-1/2 transform -translate-x-1/2 w-12 h-12 bg-white/20 hover:bg-white/30 active:bg-white/40 rounded-lg flex items-center justify-center text-2xl transition-all"
+                            >
+                                ↑
+                            </button>
+                            {/* Down button */}
+                            <button
+                                onTouchStart={(e) => {
+                                    e.preventDefault();
+                                    changeDirection('DOWN');
+                                }}
+                                className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-12 bg-white/20 hover:bg-white/30 active:bg-white/40 rounded-lg flex items-center justify-center text-2xl transition-all"
+                            >
+                                ↓
+                            </button>
+                            {/* Left button */}
+                            <button
+                                onTouchStart={(e) => {
+                                    e.preventDefault();
+                                    changeDirection('LEFT');
+                                }}
+                                className="absolute left-0 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 hover:bg-white/30 active:bg-white/40 rounded-lg flex items-center justify-center text-2xl transition-all"
+                            >
+                                ←
+                            </button>
+                            {/* Right button */}
+                            <button
+                                onTouchStart={(e) => {
+                                    e.preventDefault();
+                                    changeDirection('RIGHT');
+                                }}
+                                className="absolute right-0 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/20 hover:bg-white/30 active:bg-white/40 rounded-lg flex items-center justify-center text-2xl transition-all"
+                            >
+                                →
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
