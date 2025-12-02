@@ -621,7 +621,19 @@ export const Game: React.FC = () => {
         setStartTime(null);
         setKiwiCount(0);
         setClassicScore(0);
+        setFruit(null);
+        setKiwi(null);
+        setFruitIndex(0);
+        setKiwisSpawnedSoFar(0);
+        setLastKiwiSpawnIndex(-1);
+        resetSnake();
         setGameState('START');
+
+        // Clear any existing countdown timer
+        if (countdownTimerRef.current) {
+            clearInterval(countdownTimerRef.current);
+            countdownTimerRef.current = null;
+        }
 
         // Update the mode (this will trigger start screen to appear)
         setGameMode(newMode);
