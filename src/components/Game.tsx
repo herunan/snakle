@@ -33,6 +33,7 @@ export const Game: React.FC = () => {
     const [lastKiwiSpawnIndex, setLastKiwiSpawnIndex] = useState(-1);
     const touchStartRef = React.useRef<{ x: number, y: number } | null>(null);
     const [classicHighScore, setClassicHighScore] = useState(0);
+    const [isNewPersonalBest, setIsNewPersonalBest] = useState(false);
     const countdownTimerRef = React.useRef<any>(null);
     const [nextPuzzleTime, setNextPuzzleTime] = useState('');
 
@@ -384,8 +385,11 @@ export const Game: React.FC = () => {
 
             // Save Classic high score if beaten
             if (gameMode === 'CLASSIC' && classicScore > classicHighScore) {
+                setIsNewPersonalBest(true);
                 setClassicHighScore(classicScore);
                 localStorage.setItem('snakle_classic_high_score', classicScore.toString());
+            } else if (gameMode === 'CLASSIC') {
+                setIsNewPersonalBest(false);
             }
 
             // Save state on death (completed: false so it can be resumed)
@@ -543,8 +547,8 @@ export const Game: React.FC = () => {
         let text = '';
 
         if (gameMode === 'CLASSIC') {
-            const isNewPB = classicScore > classicHighScore;
-            text = `🐍 Snakle Classic •${deviceTag}\n🍎 ${classicScore}${isNewPB ? ' • 🏆 PB' : ''}`;
+            const isNewPB = isNewPersonalBest;
+            text = `🐍 Snakle Classic •${deviceTag}\n🍎${isNewPB ? '🏆' : ''} ${classicScore}`;
             text += `\nhttps://snakle.surge.sh`;
         } else {
             // Daily mode
@@ -567,8 +571,24 @@ export const Game: React.FC = () => {
 
     // Handle game mode switching with appropriate consequences
     const handleModeSwitch = (newMode: 'DAILY' | 'CLASSIC') => {
+        if (newMode === gameMode) return;
+
+        // Check if Daily is already completed
+        if (newMode === 'DAILY') {
+            const today = getDailySeed();
+            const savedState = localStorage.getItem(`snakle_daily_${today}`);
+            if (savedState) {
+                const state = JSON.parse(savedState);
+                if (state.completed) {
+                    // Show victory screen instead of starting
+                    startGame('DAILY');
+                    return;
+                }
+            }
+        }
+
         // Confirm if playing
-        if (gameState === 'PLAYING' || gameState === 'COUNTDOWN') {
+        if (gameState !== 'START' && gameState !== 'VICTORY') {
             if (gameMode === 'DAILY') {
                 if (!confirm('Switching modes will cost you a life in Daily Challenge! Are you sure?')) {
                     return;
@@ -722,7 +742,7 @@ export const Game: React.FC = () => {
                             {gameMode === 'CLASSIC' ? (
                                 <>
                                     <h1 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-6">
-                                        {classicScore > classicHighScore ? 'NEW PERSONAL BEST!' : 'GAME OVER'}
+                                        {isNewPersonalBest ? 'NEW PERSONAL BEST!' : 'GAME OVER'}
                                     </h1>
                                     <p className="text-3xl md:text-4xl text-white font-bold mb-8">
                                         🍎 {classicScore}
@@ -736,7 +756,7 @@ export const Game: React.FC = () => {
                                         </button>
                                         <button
                                             onClick={() => startGame('CLASSIC')}
-                                            className="flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-full text-lg font-bold transition-all transform hover:scale-105"
+                                            className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-full text-lg font-bold transition-all transform hover:scale-105 w-full max-w-xs"
                                         >
                                             <Play size={20} /> Try again
                                         </button>
