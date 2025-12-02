@@ -519,11 +519,12 @@ export const Game: React.FC = () => {
             setGameState('COUNTDOWN');
             setCountdown(3);
             let count = 3;
-            const timer = setInterval(() => {
+            if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+            countdownTimerRef.current = setInterval(() => {
                 count--;
                 setCountdown(count);
                 if (count === 0) {
-                    clearInterval(timer);
+                    if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
                     setGameState('PLAYING');
                 }
             }, 1000);
@@ -534,11 +535,12 @@ export const Game: React.FC = () => {
         setGameState('COUNTDOWN');
         setCountdown(3);
         let count = 3;
-        const timer = setInterval(() => {
+        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = setInterval(() => {
             count--;
             setCountdown(count);
             if (count === 0) {
-                clearInterval(timer);
+                if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
                 setGameState('PLAYING');
             }
         }, 1000);
