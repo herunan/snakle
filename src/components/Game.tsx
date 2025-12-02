@@ -35,7 +35,24 @@ export const Game: React.FC = () => {
     const [classicHighScore, setClassicHighScore] = useState(0);
     const [isNewPersonalBest, setIsNewPersonalBest] = useState(false);
     const countdownTimerRef = React.useRef<any>(null);
+    const [classicHighScore, setClassicHighScore] = useState(0);
+    const [isNewPersonalBest, setIsNewPersonalBest] = useState(false);
+    const countdownTimerRef = React.useRef<any>(null);
     const [nextPuzzleTime, setNextPuzzleTime] = useState('');
+    const [classicKiwiSchedule, setClassicKiwiSchedule] = useState<number[]>([]);
+
+    // Helper to generate kiwi spawn points for a 15-apple cycle
+    const generateKiwiSchedule = (startScore: number) => {
+        const count = Math.random() < 0.5 ? 1 : 2; // 1 or 2 kiwis
+        const offsets: number[] = [];
+        while (offsets.length < count) {
+            const r = Math.floor(Math.random() * 15) + 1; // 1 to 15
+            if (!offsets.includes(r)) {
+                offsets.push(r);
+            }
+        }
+        return offsets.map(o => startScore + o);
+    };
 
 
     // Load Classic high score on mount
@@ -248,10 +265,25 @@ export const Game: React.FC = () => {
             let shouldSpawn = false;
 
             if (gameMode === 'CLASSIC') {
-                // Sporadic spawning for Classic: ~1 every 15 fruits
-                // We can check if fruitIndex is a multiple of 15 (plus some randomness if desired, but fixed is easier)
-                if (fruitIndex > 0 && fruitIndex % 15 === 0) {
+                // Check if current fruitIndex triggers a spawn based on schedule
+                if (classicKiwiSchedule.includes(fruitIndex)) {
                     shouldSpawn = true;
+                }
+
+                // Generate next cycle if needed (every 15 apples)
+                if (fruitIndex > 0 && fruitIndex % 15 === 0) {
+                    // We need to ensure we don't add duplicates if effect runs multiple times
+                    // But generateKiwiSchedule returns new numbers > fruitIndex
+                    // We can just check if the last schedule item is > fruitIndex + 15 to be safe?
+                    // Or just rely on the fact that fruitIndex only hits this once.
+                    // Actually, fruitIndex changes once per fruit.
+                    // But we should check if we already generated for this cycle.
+                    // Let's check if the schedule already has items > fruitIndex
+                    const hasFutureItems = classicKiwiSchedule.some(s => s > fruitIndex);
+                    if (!hasFutureItems) {
+                        const nextBatch = generateKiwiSchedule(fruitIndex);
+                        setClassicKiwiSchedule(prev => [...prev, ...nextBatch]);
+                    }
                 }
             } else {
                 // Daily logic
@@ -345,7 +377,13 @@ export const Game: React.FC = () => {
         setKiwi(null);
         setKiwisSpawnedSoFar(0);
         setLastKiwiSpawnIndex(-1);
+        setKiwisSpawnedSoFar(0);
+        setLastKiwiSpawnIndex(-1);
         setClassicScore(0);
+
+        if (mode === 'CLASSIC') {
+            setClassicKiwiSchedule(generateKiwiSchedule(0));
+        }
 
         if (mode === 'DAILY' && config.savedState) {
             const state = config.savedState;
