@@ -491,15 +491,15 @@ export const Game: React.FC = () => {
 
             if (gameMode === 'CLASSIC') {
                 setClassicScore(s => s + 1);
-                // Speed based on score, capping at MIN_SPEED (50ms)
-                // Start at 150. Max speed at 30 apples. Range is 100ms.
-                // 100 / 30 = 3.33ms per apple.
-                const newSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - Math.ceil((score + 1) * 3.33));
+                // Speed based on score, capping at MIN_SPEED (75ms)
+                // Start at 150. Max speed at 30 apples. Range is 75ms.
+                // 75 / 30 = 2.5ms per apple.
+                const newSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - Math.ceil((score + 1) * 2.5));
                 setSpeed(newSpeed);
             } else {
                 // Daily: Speed based on apple score, proportional to target
-                // Range is 100ms. Increment = 100 / targetFruits.
-                const dailyIncrement = 100 / targetFruits;
+                // Range is 75ms. Increment = 75 / targetFruits.
+                const dailyIncrement = 75 / targetFruits;
                 const newSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - Math.ceil((score + 1) * dailyIncrement));
                 setSpeed(newSpeed);
             }
@@ -778,7 +778,11 @@ export const Game: React.FC = () => {
 
     return (
         <div
-            className="flex flex-col items-center justify-start h-screen w-screen bg-gray-900 text-white overflow-hidden touch-none select-none pt-12 pb-32 px-4"
+            className="flex flex-col items-center justify-start min-h-screen w-screen bg-gray-900 text-white overflow-hidden touch-none select-none px-4"
+            style={{
+                paddingTop: 'max(3rem, env(safe-area-inset-top))',
+                paddingBottom: 'max(8rem, env(safe-area-inset-bottom))'
+            }}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -929,10 +933,6 @@ export const Game: React.FC = () => {
                             <p className="text-xl md:text-2xl text-gray-300">
                                 ❤️ {lives} lives used
                             </p>
-                            <p className="text-xl md:text-2xl text-gray-300">
-                                ❤️ {lives} lives used
-                            </p>
-                            {/* Timer removed for Daily Victory */}
                         </div>
                         <div className="flex flex-col gap-3 items-center">
                             <button
@@ -949,7 +949,7 @@ export const Game: React.FC = () => {
                             </button>
                         </div>
                         {gameMode === 'DAILY' && (
-                            <p className="text-sm text-gray-400 mt-2">
+                            <p className="text-base text-white mt-4 font-semibold">
                                 Next Snakle in {nextPuzzleTime}
                             </p>
                         )}

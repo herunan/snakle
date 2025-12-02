@@ -1,6 +1,6 @@
 export const GRID_SIZE = 20; // 20x20 grid
 export const INITIAL_SPEED = 150; // ms per move
-export const MIN_SPEED = 50; // Max speed
+export const MIN_SPEED = 75; // Max speed
 export const SPEED_DECREMENT = 2; // Speed increase per fruit
 export const MIN_FRUITS = 10; // Minimum fruits to collect
 export const MAX_FRUITS = 20; // Maximum fruits to collect
