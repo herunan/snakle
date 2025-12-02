@@ -34,6 +34,7 @@ export const Game: React.FC = () => {
     const touchStartRef = React.useRef<{ x: number, y: number } | null>(null);
     const [classicHighScore, setClassicHighScore] = useState(0);
     const countdownTimerRef = React.useRef<any>(null);
+    const [nextPuzzleTime, setNextPuzzleTime] = useState('');
 
 
     // Load Classic high score on mount
@@ -43,6 +44,18 @@ export const Game: React.FC = () => {
             setClassicHighScore(parseInt(savedHighScore, 10));
         }
     }, []);
+
+    // Update Next Snakle timer in real-time
+    useEffect(() => {
+        if (gameMode === 'DAILY' && gameState === 'VICTORY') {
+            const updateTimer = () => {
+                setNextPuzzleTime(getTimeToNextPuzzle());
+            };
+            updateTimer(); // Initial update
+            const interval = setInterval(updateTimer, 1000);
+            return () => clearInterval(interval);
+        }
+    }, [gameMode, gameState]);
 
     // Save/Load Daily game state
 
@@ -708,7 +721,7 @@ export const Game: React.FC = () => {
                         <div className="text-center">
                             {gameMode === 'CLASSIC' ? (
                                 <>
-                                    <h1 className="text-4xl md:text-6xl font-bold text-red-500 mb-6">
+                                    <h1 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-6">
                                         {classicScore > classicHighScore ? 'NEW PERSONAL BEST!' : 'GAME OVER'}
                                     </h1>
                                     <p className="text-3xl md:text-4xl text-white font-bold mb-8">
@@ -717,15 +730,15 @@ export const Game: React.FC = () => {
                                     <div className="flex flex-col gap-3 justify-center mt-6">
                                         <button
                                             onClick={handleShare}
-                                            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
+                                            className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
                                         >
                                             <Share2 size={20} /> Share score
                                         </button>
                                         <button
-                                            onClick={() => startGame('DAILY')}
-                                            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
+                                            onClick={() => startGame('CLASSIC')}
+                                            className="flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-full text-lg font-bold transition-all transform hover:scale-105"
                                         >
-                                            <Play size={20} /> Play Daily #{getDailyNumber()}
+                                            <Play size={20} /> Try again
                                         </button>
                                     </div>
                                 </>
@@ -748,11 +761,8 @@ export const Game: React.FC = () => {
                             You ate all the fruit!
                         </h1>
                         <div className="text-center mb-6 space-y-1">
-                            <p className="text-2xl md:text-3xl font-bold text-white">
-                                🍎 {score}/{targetFruits}{kiwiCount > 0 ? ` 🥝 ${kiwiCount}/${totalKiwisToday}` : ''}
-                            </p>
                             <p className="text-xl md:text-2xl text-gray-300">
-                                ❤️ {lives}
+                                ❤️ {lives} lives used
                             </p>
                             <p className="text-xl md:text-2xl text-gray-300">
                                 ⏱️ {formatTime(elapsedTime)}
@@ -761,20 +771,20 @@ export const Game: React.FC = () => {
                         <div className="flex flex-col gap-3 items-center">
                             <button
                                 onClick={handleShare}
-                                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30"
+                                className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
                             >
                                 <Share2 size={20} /> Share score
                             </button>
                             <button
                                 onClick={() => startGame('CLASSIC')}
-                                className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
+                                className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
                             >
-                                <Play size={18} /> Play Classic
+                                <Play size={20} /> Play Classic
                             </button>
                         </div>
                         {gameMode === 'DAILY' && (
                             <p className="text-sm text-gray-400 mt-2">
-                                Next Snakle in {getTimeToNextPuzzle()}
+                                Next Snakle in {nextPuzzleTime}
                             </p>
                         )}
                     </div>
