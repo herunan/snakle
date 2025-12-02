@@ -62,119 +62,70 @@ export const Game: React.FC = () => {
 
 
 
-    // Initialize Game Logic based on Mode
-    useEffect(() => {
-        const isDebug = new URLSearchParams(window.location.search).get('debug') === 'true';
+    // Initialize Mode Config (Moved from useEffect to startGame to fix race conditions)
+    const getModeConfig = (mode: 'DAILY' | 'TUTORIAL' | 'CLASSIC', isDebug: boolean) => {
+        let target = 0;
+        let totalKiwis = 0;
+        let increment = SPEED_DECREMENT;
+        let sequence: Point[] = [];
+        let savedState = null;
 
-        // Reset state for new mode
-        setFruitSequence([]);
-        setFruitIndex(0);
-        setKiwi(null);
-        setKiwiCount(0);
-        setTotalKiwisToday(0);
-        setKiwisSpawnedSoFar(0);
-        setLastKiwiSpawnIndex(-1);
-        setScore(0);
-        setLives(0);
-        setElapsedTime(0);
-        setStartTime(null);
-
-        if (gameMode === 'TUTORIAL') {
-            setTargetFruits(3);
-            setTotalKiwisToday(1);
-            setFruitSequence(Array.from({ length: 50 }, () => ({
+        if (mode === 'TUTORIAL') {
+            target = 3;
+            totalKiwis = 1;
+            sequence = Array.from({ length: 50 }, () => ({
                 x: Math.floor(Math.random() * GRID_SIZE),
                 y: Math.floor(Math.random() * GRID_SIZE)
-            })));
-        } else if (gameMode === 'CLASSIC') {
-            const rng = new SeededRNG(Math.random().toString()); // Random seed for classic
-            setTargetFruits(Infinity);
+            }));
+        } else if (mode === 'CLASSIC') {
+            const rng = new SeededRNG(Math.random().toString());
+            target = Infinity;
             // Enable kiwis in Classic mode (30% chance)
             const isKiwiDay = rng.next() < 0.3;
             if (isKiwiDay) {
-                setTotalKiwisToday(rng.nextInt(1, 3));
-            } else {
-                setTotalKiwisToday(0);
+                totalKiwis = rng.nextInt(1, 3);
             }
-            const increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / 50)); // Slower speed ramp for unlimited
-            setSpeedIncrement(increment);
+            increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / 50));
 
-            // Generate random fruit sequence
-            const sequence: Point[] = [];
-            for (let i = 0; i < 1000; i++) { // More fruits for unlimited
+            for (let i = 0; i < 1000; i++) {
                 sequence.push({
                     x: rng.nextInt(0, GRID_SIZE - 1),
                     y: rng.nextInt(0, GRID_SIZE - 1),
                 });
             }
-            setFruitSequence(sequence);
         } else {
             // Daily Mode
             const rng = new SeededRNG(getDailySeed());
 
             if (isDebug) {
-                setTargetFruits(3);
-                setTotalKiwisToday(1);
+                target = 3;
+                totalKiwis = 1;
             } else {
-                const target = rng.nextInt(MIN_FRUITS, MAX_FRUITS);
-                setTargetFruits(target);
-                const increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / target));
-                setSpeedIncrement(increment);
+                target = rng.nextInt(MIN_FRUITS, MAX_FRUITS);
+                increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / target));
 
-                // Kiwi Logic: Every 3-5 days (approx 30% chance)
                 const isKiwiDay = rng.next() < 0.3;
                 if (isKiwiDay) {
-                    setTotalKiwisToday(rng.nextInt(1, 3));
-                } else {
-                    setTotalKiwisToday(0);
+                    totalKiwis = rng.nextInt(1, 3);
                 }
 
-                // Restore saved state if available
                 const today = getDailySeed();
-                const savedState = localStorage.getItem(`snakle_daily_${today}`);
-                if (savedState) {
-                    const state = JSON.parse(savedState);
-                    if (!state.completed) {
-                        const savedScore = state.score || 0;
-                        setScore(savedScore);
-                        // Penalty: Increment lives when resuming an incomplete game (refresh/return)
-                        const restoredLives = (state.lives || 0) + 1;
-                        setLives(restoredLives);
-                        setElapsedTime(state.elapsedTime || 0);
-                        setKiwiCount(state.kiwiCount || 0);
-
-                        // Restore derived state
-                        setFruitIndex(savedScore);
-                        const restoredSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - (savedScore * increment));
-                        setSpeed(restoredSpeed);
-
-                        // Restore snake length based on score + kiwis
-                        const baseSnake = [
-                            { x: 10, y: 10 },
-                            { x: 10, y: 11 },
-                            { x: 10, y: 12 },
-                        ];
-                        const tail = baseSnake[baseSnake.length - 1];
-                        const totalLength = 3 + savedScore + (state.kiwiCount || 0);
-                        const extraSegments = Array(Math.max(0, totalLength - 3)).fill(tail);
-                        setSnake([...baseSnake, ...extraSegments]);
-                        setDirection('UP');
-                        setIsAlive(true);
-                    }
+                const stored = localStorage.getItem(`snakle_daily_${today}`);
+                if (stored) {
+                    savedState = JSON.parse(stored);
                 }
             }
 
-            // Generate deterministic fruit sequence
-            const sequence: Point[] = [];
             for (let i = 0; i < 500; i++) {
                 sequence.push({
                     x: rng.nextInt(0, GRID_SIZE - 1),
                     y: rng.nextInt(0, GRID_SIZE - 1),
                 });
             }
-            setFruitSequence(sequence);
         }
-    }, [gameMode]);
+
+        return { target, totalKiwis, increment, sequence, savedState };
+    };
 
     // Timer logic
     useEffect(() => {
@@ -304,6 +255,14 @@ export const Game: React.FC = () => {
     // Start Game Sequence
     const startGame = (mode: 'DAILY' | 'TUTORIAL' | 'CLASSIC') => {
         setGameMode(mode);
+        const isDebug = new URLSearchParams(window.location.search).get('debug') === 'true';
+
+        // Initialize Mode Config
+        const config = getModeConfig(mode, isDebug);
+        setTargetFruits(config.target);
+        setTotalKiwisToday(config.totalKiwis);
+        setSpeedIncrement(config.increment);
+        setFruitSequence(config.sequence);
 
         // Default State
         let nextScore = 0;
@@ -315,34 +274,21 @@ export const Game: React.FC = () => {
 
         // Reset transient state
         setFruit(null);
-        setFruitSequence([]); // Will be regenerated by effect
         setKiwi(null);
         setKiwisSpawnedSoFar(0);
         setLastKiwiSpawnIndex(-1);
 
-        if (mode === 'DAILY') {
-            const today = getDailySeed();
-            const savedState = localStorage.getItem(`snakle_daily_${today}`);
-            if (savedState) {
-                const state = JSON.parse(savedState);
-                if (!state.completed) {
-                    nextScore = state.score || 0;
-                    nextLives = (state.lives || 0) + 1; // Penalty
-                    nextElapsedTime = state.elapsedTime || 0;
-                    nextKiwiCount = state.kiwiCount || 0;
-                    nextFruitIndex = nextScore;
+        if (mode === 'DAILY' && config.savedState) {
+            const state = config.savedState;
+            if (!state.completed) {
+                nextScore = state.score || 0;
+                nextLives = (state.lives || 0) + 1; // Penalty
+                nextElapsedTime = state.elapsedTime || 0;
+                nextKiwiCount = state.kiwiCount || 0;
+                nextFruitIndex = nextScore;
 
-                    // Calculate speed based on apples (score)
-                    // We need to know the increment. 
-                    // Since we can't easily access the calculated increment here without duplicating logic,
-                    // we'll approximate or rely on the effect to fix it? 
-                    // Better to duplicate the simple logic or store it.
-                    // For Daily, target is random. We don't have target here yet (it's in effect).
-                    // Actually, we can just set speed to INITIAL and let the effect update it?
-                    // But we want to avoid "jump".
-                    // Let's rely on the effect to update speed/target, as it depends on gameMode.
-                    // But we need to set the snake length correctly NOW.
-                }
+                // Calculate speed based on apples (score)
+                nextSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - (nextScore * config.increment));
             }
         }
 
@@ -682,7 +628,7 @@ export const Game: React.FC = () => {
                 </div>
             )}
 
-            <div className="relative" style={{ filter: gameState === 'DEATH' ? 'grayscale(1)' : 'none' }}>
+            <div className="relative" style={{ filter: gameState === 'DEATH' ? 'blur(5px)' : 'none' }}>
                 <Board snake={snake} fruit={fruit} walls={walls} kiwi={kiwi} />
 
                 {/* Main Menu Button removed from here - now in title area */}
@@ -741,12 +687,12 @@ export const Game: React.FC = () => {
                         onClick={gameMode !== 'CLASSIC' ? handleDeathDismiss : undefined}
                     >
                         <div className="text-center">
-                            <h2 className="text-5xl md:text-6xl font-bold text-red-400 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)]">
+                            <h2 className="text-4xl md:text-5xl font-bold text-red-400 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)]">
                                 WASTED
                             </h2>
                             {gameMode === 'CLASSIC' ? (
                                 <>
-                                    <p className="text-3xl md:text-4xl text-white font-bold mt-6">
+                                    <p className="text-3xl md:text-4xl text-green-400 font-bold mt-6">
                                         Score: {score}
                                     </p>
                                     <div className="flex gap-3 justify-center mt-6">
