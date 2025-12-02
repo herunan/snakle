@@ -32,7 +32,7 @@ export const Game: React.FC = () => {
     const [lastKiwiSpawnIndex, setLastKiwiSpawnIndex] = useState(-1);
     const touchStartRef = React.useRef<{ x: number, y: number } | null>(null);
     const [classicHighScore, setClassicHighScore] = useState(0);
-    const countdownTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+    const countdownTimerRef = React.useRef<any>(null);
 
 
     // Load Classic high score on mount
