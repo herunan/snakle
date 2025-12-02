@@ -881,7 +881,7 @@ export const Game: React.FC = () => {
 
                                     const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
 
-                                    if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+                                    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
                                         if (angle >= -45 && angle < 45) {
                                             changeDirection('RIGHT');
                                         } else if (angle >= 45 && angle < 135) {
