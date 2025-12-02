@@ -316,17 +316,21 @@ export const Game: React.FC = () => {
         const extraSegments = Array(Math.max(0, totalLength - 3)).fill(tail);
         setSnake([...baseSnake, ...extraSegments]);
         setDirection('UP');
-        setIsAlive(true);
-
         setGameState('COUNTDOWN');
         setCountdown(3);
+
+        // Clear any existing countdown
+        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+
         let count = 3;
-        const timer = setInterval(() => {
+        countdownTimerRef.current = setInterval(() => {
             count--;
             setCountdown(count);
             if (count === 0) {
-                clearInterval(timer);
+                if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
                 setGameState('PLAYING');
+                // Set start time correctly accounting for elapsed time
+                setStartTime(Date.now() - (nextElapsedTime * 1000));
             }
         }, 1000);
     };
