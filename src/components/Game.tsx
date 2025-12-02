@@ -462,13 +462,16 @@ export const Game: React.FC = () => {
             if (gameMode === 'CLASSIC') {
                 setClassicScore(s => s + 1);
                 // Speed based on score, capping at MIN_SPEED (50ms)
-                // Start at 150, decrease by 2 per fruit. To reach 50, we need 50 fruits.
-                // Math.max(50, 150 - (score * 2))
-                const newSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - ((score + 1) * 2));
+                // Start at 150. Max speed at 30 apples. Range is 100ms.
+                // 100 / 30 = 3.33ms per apple.
+                const newSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - Math.ceil((score + 1) * 3.33));
                 setSpeed(newSpeed);
             } else {
-                // Daily: Speed based on apple score
-                setSpeed(s => Math.max(MIN_SPEED, s - speedIncrement));
+                // Daily: Speed based on apple score, proportional to target
+                // Range is 100ms. Increment = 100 / targetFruits.
+                const dailyIncrement = 100 / targetFruits;
+                const newSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - Math.ceil((score + 1) * dailyIncrement));
+                setSpeed(newSpeed);
             }
 
             // Check victory condition (Only for non-Classic modes)
@@ -567,10 +570,10 @@ export const Game: React.FC = () => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (gameState !== 'PLAYING') return;
             switch (e.key) {
-                case 'ArrowUp': changeDirection('UP'); break;
-                case 'ArrowDown': changeDirection('DOWN'); break;
-                case 'ArrowLeft': changeDirection('LEFT'); break;
-                case 'ArrowRight': changeDirection('RIGHT'); break;
+                case 'ArrowUp': case 'w': case 'W': changeDirection('UP'); break;
+                case 'ArrowDown': case 's': case 'S': changeDirection('DOWN'); break;
+                case 'ArrowLeft': case 'a': case 'A': changeDirection('LEFT'); break;
+                case 'ArrowRight': case 'd': case 'D': changeDirection('RIGHT'); break;
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -745,7 +748,7 @@ export const Game: React.FC = () => {
 
     return (
         <div
-            className="flex flex-col items-center justify-start h-screen w-screen bg-gray-900 text-white overflow-hidden touch-none select-none pt-8 pb-32"
+            className="flex flex-col items-center justify-start h-screen w-screen bg-gray-900 text-white overflow-hidden touch-none select-none pt-12 pb-32 px-4"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -790,11 +793,6 @@ export const Game: React.FC = () => {
                             <span>🥝</span> {`${kiwiCount}/${kiwisSpawnedSoFar}`}
                         </div>
                     )}
-                    {gameMode === 'CLASSIC' && (
-                        <div className="flex items-center gap-2 text-blue-400">
-                            <span>⏱️</span> {formatTime(elapsedTime)}
-                        </div>
-                    )}
                 </div>
             )}
 
@@ -822,9 +820,9 @@ export const Game: React.FC = () => {
                                 <br /><br />
                                 <span className="text-yellow-400">Controls:</span>
                                 <br />
-                                📱 Hold finger on screen and move around
+                                📱 Hold and drag joystick
                                 <br />
-                                ⌨️ Arrow keys
+                                ⌨️ Arrow keys or WASD
                             </p>
                         </div>
 
@@ -929,8 +927,8 @@ export const Game: React.FC = () => {
                 )}
 
                 {/* Virtual Joystick - 4-Way with Draggable Knob */}
-                {/* Only show on mobile and when playing */}
-                {isMobile && gameState === 'PLAYING' && (
+                {/* Only show on mobile and when playing (or counting down in Daily) */}
+                {isMobile && (gameState === 'PLAYING' || (gameMode === 'DAILY' && gameState === 'COUNTDOWN')) && (
                     <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
                         <div
                             className="relative w-32 h-32 bg-white/10 rounded-full border-4 border-white/20 flex items-center justify-center touch-none"
