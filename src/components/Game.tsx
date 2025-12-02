@@ -707,11 +707,11 @@ export const Game: React.FC = () => {
                         </div>
                     )}
                     <div className="flex items-center gap-2 text-green-400">
-                        <span>🍎</span> {gameMode === 'CLASSIC' ? score : `${score}/${targetFruits}`}
+                        <span>🍎</span> {gameMode === 'CLASSIC' ? score + (kiwiCount * 5) : `${score}/${targetFruits}`}
                     </div>
-                    {(kiwisSpawnedSoFar > 0 || kiwi) && (
+                    {gameMode !== 'CLASSIC' && (kiwisSpawnedSoFar > 0 || kiwi) && (
                         <div className="flex items-center gap-2 text-yellow-400">
-                            <span>🥝</span> {gameMode === 'CLASSIC' ? kiwiCount : `${kiwiCount}/${kiwisSpawnedSoFar}`}
+                            <span>🥝</span> {`${kiwiCount}/${kiwisSpawnedSoFar}`}
                         </div>
                     )}
                     {gameMode !== 'CLASSIC' && (
