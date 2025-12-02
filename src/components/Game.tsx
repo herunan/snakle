@@ -32,6 +32,7 @@ export const Game: React.FC = () => {
     const [lastKiwiSpawnIndex, setLastKiwiSpawnIndex] = useState(-1);
     const touchStartRef = React.useRef<{ x: number, y: number } | null>(null);
     const [classicHighScore, setClassicHighScore] = useState(0);
+    const countdownTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
 
     // Load Classic high score on mount
@@ -249,8 +250,9 @@ export const Game: React.FC = () => {
 
     // Initial fruit
     useEffect(() => {
-        if (!fruit && walls.length > 0 && fruitSequence.length > 0) spawnFruit();
-    }, [walls, fruitSequence, spawnFruit]);
+        // Classic mode has no walls, so we just check for fruitSequence
+        if (!fruit && fruitSequence.length > 0) spawnFruit();
+    }, [fruitSequence, spawnFruit, fruit]);
 
     // Start Game Sequence
     const startGame = (mode: 'DAILY' | 'TUTORIAL' | 'CLASSIC') => {
@@ -528,8 +530,16 @@ export const Game: React.FC = () => {
     // Handle game mode switching with appropriate consequences
     const handleModeSwitch = (newMode: 'DAILY' | 'TUTORIAL' | 'CLASSIC') => {
         // Confirm if playing
-        if (gameState === 'PLAYING' && !confirm('Switch modes? This will end your current game.')) {
-            return;
+        if (gameState === 'PLAYING' || gameState === 'COUNTDOWN') {
+            if (gameMode === 'DAILY') {
+                if (!confirm('Switching modes will cost you a life in Daily Challenge! Are you sure?')) {
+                    return;
+                }
+            } else {
+                if (!confirm('Switch modes? This will end your current game.')) {
+                    return;
+                }
+            }
         }
 
         // Handle consequences for leaving current mode
@@ -628,8 +638,10 @@ export const Game: React.FC = () => {
                 </div>
             )}
 
-            <div className="relative" style={{ filter: gameState === 'DEATH' ? 'blur(5px)' : 'none' }}>
-                <Board snake={snake} fruit={fruit} walls={walls} kiwi={kiwi} />
+            <div className="relative">
+                <div style={{ filter: gameState === 'DEATH' ? 'blur(5px)' : 'none', transition: 'filter 0.3s ease' }}>
+                    <Board snake={snake} fruit={fruit} walls={walls} kiwi={kiwi} />
+                </div>
 
                 {/* Main Menu Button removed from here - now in title area */}
 
