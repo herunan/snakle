@@ -350,10 +350,18 @@ export const Game: React.FC = () => {
 
     // Logic Check
     useEffect(() => {
+        // Check death and save Classic high score
         if (!isAlive && gameState === 'PLAYING') {
             // Died - Show WASTED screen
             setLives(l => l + 1);
             setGameState('DEATH');
+
+            // Save Classic high score if beaten
+            if (gameMode === 'CLASSIC' && classicScore > classicHighScore) {
+                setClassicHighScore(classicScore);
+                localStorage.setItem('snakle_classic_high_score', classicScore.toString());
+            }
+
             // Save state on death (completed: false so it can be resumed)
             if (gameMode === 'DAILY') {
                 const today = getDailySeed();
@@ -511,7 +519,8 @@ export const Game: React.FC = () => {
         let text = '';
 
         if (gameMode === 'CLASSIC') {
-            text = `🐍 Snakle Classic •${deviceTag}\n🍎 ${classicScore}`;
+            const isNewPB = classicScore > classicHighScore;
+            text = `🐍 Snakle Classic •${deviceTag}\n🍎 ${classicScore}${isNewPB ? ' • 🏆 PB' : ''}`;
             if (kiwiCount > 0) {
                 text += `\n🥝 ${kiwiCount}`;
             }
@@ -588,17 +597,15 @@ export const Game: React.FC = () => {
                 <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
                     SNAKLE
                 </h1>
-                {gameState !== 'START' && (
-                    <button
-                        onClick={() => handleModeSwitch(gameMode === 'DAILY' ? 'CLASSIC' : 'DAILY')}
-                        className={`px-3 py-1 rounded text-white font-bold transition-all text-xs ${gameMode === 'DAILY'
+                <button
+                    onClick={() => handleModeSwitch(gameMode === 'DAILY' ? 'CLASSIC' : 'DAILY')}
+                    className={`px-3 py-1 rounded text-white font-bold transition-all text-xs ${gameMode === 'DAILY'
                             ? 'bg-purple-600 hover:bg-purple-500'
                             : 'bg-blue-600 hover:bg-blue-500'
-                            }`}
-                    >
-                        {gameMode === 'DAILY' ? 'Play Classic' : 'Play Daily'}
-                    </button>
-                )}
+                        }`}
+                >
+                    {gameMode === 'DAILY' ? 'Play Classic' : `Play Daily #${getDailyNumber()}`}
+                </button>
             </div>
 
             {/* Mode Selection Buttons - Removed (integrated into header) */}
@@ -642,43 +649,36 @@ export const Game: React.FC = () => {
 
                 {/* Start Screen Overlay */}
                 {gameState === 'START' && (
-                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 px-6 text-center">
-                        <p className="text-gray-300 text-sm md:text-base mb-6 max-w-md leading-relaxed">
-                            {gameMode === 'DAILY' ? (
-                                <>
-                                    Eat fruit without eating yourself and obstacles. You can go through walls. Use as few lives as possible.
-                                    <br /><br />
-                                    <span className="text-yellow-400">Controls:</span>
-                                    <br />
-                                    📱 Hold finger on screen and move around
-                                    <br />
-                                    ⌨️ Arrow keys
-                                </>
-                            ) : (
-                                <>
-                                    Classic Snakle! Eat fruit without eating yourself. You can go through walls. You get one life.
-                                </>
-                            )}
-                        </p>
+                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 px-6">
+                        <div className="text-left max-w-md mb-6">
+                            <p className="text-gray-300 text-sm md:text-base leading-relaxed">
+                                {gameMode === 'DAILY' ? (
+                                    <>
+                                        Eat fruit without eating yourself and obstacles. You can go through walls. Use as few lives as possible.
+                                    </>
+                                ) : (
+                                    <>
+                                        Classic Snakle! Eat fruit without eating yourself. You can go through walls. You get one life.
+                                    </>
+                                )}
+                                <br /><br />
+                                <span className="text-yellow-400">Controls:</span>
+                                <br />
+                                📱 Hold finger on screen and move around
+                                <br />
+                                ⌨️ Arrow keys
+                            </p>
+                        </div>
 
                         <button
                             onClick={() => startGame(gameMode)}
                             className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2 ${gameMode === 'DAILY'
-                                ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/30'
-                                : 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30'
+                                    ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/30'
+                                    : 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30'
                                 }`}
                         >
-                            <Play size={24} /> Play {gameMode === 'DAILY' ? 'Daily' : 'Classic'}
+                            <Play size={24} /> Play {gameMode === 'DAILY' ? `Daily #${getDailyNumber()}` : 'Classic'}
                         </button>
-
-                        <div className="mt-6">
-                            <button
-                                onClick={() => setGameMode(gameMode === 'DAILY' ? 'CLASSIC' : 'DAILY')}
-                                className="text-sm text-gray-400 hover:text-white underline decoration-dotted underline-offset-4"
-                            >
-                                Switch to {gameMode === 'DAILY' ? 'Classic' : 'Daily'} Mode
-                            </button>
-                        </div>
                     </div>
                 )}
 
@@ -701,7 +701,7 @@ export const Game: React.FC = () => {
                             {gameMode === 'CLASSIC' ? (
                                 <>
                                     <h1 className="text-4xl md:text-6xl font-bold text-red-500 mb-6">
-                                        GAME OVER
+                                        {classicScore > classicHighScore ? 'NEW PERSONAL BEST!' : 'GAME OVER'}
                                     </h1>
                                     <p className="text-3xl md:text-4xl text-white font-bold mb-8">
                                         🍎 {classicScore}
