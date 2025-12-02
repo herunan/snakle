@@ -501,6 +501,7 @@ export const Game: React.FC = () => {
             if (gameMode === 'CLASSIC') {
                 // Classic: Add 5 to score without affecting speed or length
                 setClassicScore(s => s + 5);
+                setKiwiCount(c => c + 1); // Track kiwis in Classic too
             } else {
                 // Daily: Add to kiwi count and grow snake
                 setKiwiCount(c => c + 1);
@@ -682,8 +683,31 @@ export const Game: React.FC = () => {
             countdownTimerRef.current = null;
         }
 
-        // Update the mode (this will trigger start screen to appear)
+        // Update the mode
         setGameMode(newMode);
+
+        // If switching TO Daily, check if it's already completed
+        if (newMode === 'DAILY') {
+            const today = getDailySeed();
+            const savedState = localStorage.getItem(`snakle_daily_${today}`);
+            if (savedState) {
+                const state = JSON.parse(savedState);
+                if (state.completed) {
+                    // Force to victory screen immediately
+                    setTargetFruits(state.targetFruits || 10);
+                    setTotalKiwisToday(state.totalKiwis || 0);
+                    setScore(state.score || 0);
+                    setLives(state.lives || 0);
+                    setElapsedTime(state.elapsedTime || 0);
+                    setKiwiCount(state.kiwiCount || 0);
+                    setGameState('VICTORY');
+                    return;
+                }
+            }
+        }
+
+        // If not completed or Classic mode, go to START
+        setGameState('START');
     };
 
 
@@ -727,7 +751,7 @@ export const Game: React.FC = () => {
                         </div>
                     )}
                     <div className="flex items-center gap-2 text-green-400">
-                        <span>🍎</span> {gameMode === 'CLASSIC' ? score + (kiwiCount * 5) : `${score}/${targetFruits}`}
+                        <span>🍎</span> {gameMode === 'CLASSIC' ? classicScore : `${score}/${targetFruits}`}
                     </div>
                     {gameMode !== 'CLASSIC' && (kiwisSpawnedSoFar > 0 || kiwi) && (
                         <div className="flex items-center gap-2 text-yellow-400">
