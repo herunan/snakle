@@ -11,6 +11,7 @@ import { SeededRNG, getDailySeed, getDailyNumber } from '../utils/random';
 export const Game: React.FC = () => {
     const { snake, changeDirection, moveSnake, isAlive, grow, resetSnake, setSnake, setDirection, setIsAlive } = useSnake();
     const [gameMode, setGameMode] = useState<'DAILY' | 'CLASSIC'>('DAILY');
+    const gameModeRef = React.useRef<'DAILY' | 'CLASSIC'>('DAILY');
     const walls = useDailyLevel(gameMode);
     const [fruit, setFruit] = useState<Point | null>(null);
     const [score, setScore] = useState(0);
@@ -23,7 +24,7 @@ export const Game: React.FC = () => {
     const [startTime, setStartTime] = useState<number | null>(null);
     const [elapsedTime, setElapsedTime] = useState(0);
     const [speedIncrement, setSpeedIncrement] = useState(SPEED_DECREMENT);
-    const isMobile = typeof window !== 'undefined' && 'maxTouchPoints' in navigator && navigator.maxTouchPoints > 0;
+    const isMobile = typeof window !== 'undefined' && /Mobi|Android/i.test(navigator.userAgent);
     const [fruitIndex, setFruitIndex] = useState(0);
     const [fruitSequence, setFruitSequence] = useState<Point[]>([]);
     const [kiwi, setKiwi] = useState<Point | null>(null);
@@ -314,6 +315,7 @@ export const Game: React.FC = () => {
     // Start Game Sequence
     const startGame = (mode: 'DAILY' | 'CLASSIC') => {
         setGameMode(mode);
+        gameModeRef.current = mode;
         const isDebug = new URLSearchParams(window.location.search).get('debug') === 'true';
 
         // Initialize Mode Config
@@ -397,6 +399,12 @@ export const Game: React.FC = () => {
 
         let count = 3;
         countdownTimerRef.current = setInterval(() => {
+            // Safety check: if mode changed, abort
+            if (gameModeRef.current !== mode) {
+                if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+                return;
+            }
+
             count--;
             setCountdown(count);
             if (count === 0) {
@@ -537,6 +545,12 @@ export const Game: React.FC = () => {
         let count = 3;
         if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
         countdownTimerRef.current = setInterval(() => {
+            // Safety check: if mode changed, abort
+            if (gameModeRef.current !== 'CLASSIC') {
+                if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+                return;
+            }
+
             count--;
             setCountdown(count);
             if (count === 0) {
@@ -687,6 +701,7 @@ export const Game: React.FC = () => {
 
         // Update the mode
         setGameMode(newMode);
+        gameModeRef.current = newMode;
 
         // If switching TO Daily, check if it's already completed
         if (newMode === 'DAILY') {
