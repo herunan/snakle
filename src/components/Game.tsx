@@ -763,18 +763,18 @@ export const Game: React.FC = () => {
                                     >
                                         <Play size={18} /> Play Classic
                                     </button>
-                                    </button>
                                 )}
+                            </div>
                         </div>
-                    </div>
                         {gameMode === 'DAILY' && (
-                    <p className="text-sm text-gray-400 mt-2">
-                        Next Snakle in {getTimeToNextPuzzle()}
-                    </p>
+                            <p className="text-sm text-gray-400 mt-2">
+                                Next Snakle in {getTimeToNextPuzzle()}
+                            </p>
+                        )}
+                    </div>
                 )}
             </div>
-                )}
         </div>
-        </div >
     );
 };
+```
