@@ -967,10 +967,6 @@ export const Game: React.FC = () => {
                                 const rect = e.currentTarget.getBoundingClientRect();
                                 const centerX = rect.left + rect.width / 2;
                                 const centerY = rect.top + rect.height / 2;
-                                // joystickCenterRef.current = { x: centerX, y: centerY }; // This line was not in the original snippet, but is implied by the diff. Adding it for completeness if it was intended.
-
-                                const touch = e.touches[0];
-                                // joystickStartRef.current = { x: touch.clientX, y: touch.clientY }; // This line was not in the original snippet, but is implied by the diff. Adding it for completeness if it was intended.
 
                                 const maxDistance = 40;
 
