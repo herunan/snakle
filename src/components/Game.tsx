@@ -780,8 +780,8 @@ export const Game: React.FC = () => {
         <div
             className="flex flex-col items-center justify-start min-h-screen w-screen bg-gray-900 text-white overflow-hidden touch-none select-none px-4"
             style={{
-                paddingTop: 'max(3rem, env(safe-area-inset-top))',
-                paddingBottom: 'max(8rem, env(safe-area-inset-bottom))'
+                paddingTop: 'max(4rem, env(safe-area-inset-top, 4rem))',
+                paddingBottom: 'max(10rem, env(safe-area-inset-bottom, 10rem))'
             }}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
@@ -929,8 +929,8 @@ export const Game: React.FC = () => {
                         <h1 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-6">
                             You ate all the fruit!
                         </h1>
-                        <div className="text-center mb-6 space-y-1">
-                            <p className="text-xl md:text-2xl text-gray-300">
+                        <div className="text-center mb-6">
+                            <p className="text-base md:text-lg font-bold text-green-400">
                                 ❤️ {lives} lives used
                             </p>
                         </div>
@@ -963,9 +963,15 @@ export const Game: React.FC = () => {
                         <div
                             className="relative w-32 h-32 bg-white/10 rounded-full border-4 border-white/20 flex items-center justify-center touch-none"
                             onTouchStart={(e) => {
+                                if (gameState !== 'PLAYING') return; // Ignore during countdown
                                 const rect = e.currentTarget.getBoundingClientRect();
                                 const centerX = rect.left + rect.width / 2;
                                 const centerY = rect.top + rect.height / 2;
+                                // joystickCenterRef.current = { x: centerX, y: centerY }; // This line was not in the original snippet, but is implied by the diff. Adding it for completeness if it was intended.
+
+                                const touch = e.touches[0];
+                                // joystickStartRef.current = { x: touch.clientX, y: touch.clientY }; // This line was not in the original snippet, but is implied by the diff. Adding it for completeness if it was intended.
+
                                 const maxDistance = 40;
 
                                 const knob = e.currentTarget.querySelector('.joystick-knob') as HTMLElement;
