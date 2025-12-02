@@ -263,6 +263,19 @@ export const Game: React.FC = () => {
 
         // Initialize Mode Config
         const config = getModeConfig(mode, isDebug);
+
+        // For Daily mode, check if already completed today
+        if (mode === 'DAILY' && config.savedState && config.savedState.completed) {
+            // Show victory screen instead of starting game
+            setTargetFruits(config.target);
+            setTotalKiwisToday(config.totalKiwis);
+            setScore(config.savedState.score || 0);
+            setLives(config.savedState.lives || 0);
+            setElapsedTime(config.savedState.elapsedTime || 0);
+            setKiwiCount(config.savedState.kiwiCount || 0);
+            setGameState('VICTORY');
+            return;
+        }
         setTargetFruits(config.target);
         setTotalKiwisToday(config.totalKiwis);
         setSpeedIncrement(config.increment);
@@ -382,8 +395,8 @@ export const Game: React.FC = () => {
 
             if (gameMode === 'CLASSIC') {
                 setClassicScore(s => s + 1);
-                // Speed based on tail length (capped at 50 segments)
-                const newSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - (Math.min(snake.length, 50) * speedIncrement));
+                // Speed based on tail length (capped at 20 segments)
+                const newSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - (Math.min(snake.length, 20) * speedIncrement));
                 setSpeed(newSpeed);
             } else {
                 // Daily: Speed based on apple score
@@ -420,17 +433,15 @@ export const Game: React.FC = () => {
         // Check Kiwi
         if (kiwi && head.x === kiwi.x && head.y === kiwi.y) {
             setKiwi(null);
-            setKiwiCount(c => c + 1);
-            grow(); // Grow snake by 1 segment
 
             if (gameMode === 'CLASSIC') {
-                // Classic: Add 5 to score but only 1 to tail (already called grow() above)
+                // Classic: Add 5 to score without affecting speed or length
                 setClassicScore(s => s + 5);
-                // Speed based on tail length (capped at 50 segments)
-                const newSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - (Math.min(snake.length, 50) * speedIncrement));
-                setSpeed(newSpeed);
+            } else {
+                // Daily: Add to kiwi count and grow snake
+                setKiwiCount(c => c + 1);
+                grow();
             }
-            // Daily: Don't add to score (Apples only)
         }
 
     }, [snake, isAlive, fruit, walls, grow, spawnFruit, resetSnake, gameState, score, targetFruits, kiwi]);
@@ -521,9 +532,6 @@ export const Game: React.FC = () => {
         if (gameMode === 'CLASSIC') {
             const isNewPB = classicScore > classicHighScore;
             text = `🐍 Snakle Classic •${deviceTag}\n🍎 ${classicScore}${isNewPB ? ' • 🏆 PB' : ''}`;
-            if (kiwiCount > 0) {
-                text += `\n🥝 ${kiwiCount}`;
-            }
             text += `\nhttps://snakle.surge.sh`;
         } else {
             // Daily mode
@@ -600,8 +608,8 @@ export const Game: React.FC = () => {
                 <button
                     onClick={() => handleModeSwitch(gameMode === 'DAILY' ? 'CLASSIC' : 'DAILY')}
                     className={`px-3 py-1 rounded text-white font-bold transition-all text-xs ${gameMode === 'DAILY'
-                            ? 'bg-purple-600 hover:bg-purple-500'
-                            : 'bg-blue-600 hover:bg-blue-500'
+                        ? 'bg-purple-600 hover:bg-purple-500'
+                        : 'bg-blue-600 hover:bg-blue-500'
                         }`}
                 >
                     {gameMode === 'DAILY' ? 'Play Classic' : `Play Daily #${getDailyNumber()}`}
@@ -673,8 +681,8 @@ export const Game: React.FC = () => {
                         <button
                             onClick={() => startGame(gameMode)}
                             className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2 ${gameMode === 'DAILY'
-                                    ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/30'
-                                    : 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30'
+                                ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/30'
+                                : 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30'
                                 }`}
                         >
                             <Play size={24} /> Play {gameMode === 'DAILY' ? `Daily #${getDailyNumber()}` : 'Classic'}
@@ -706,18 +714,18 @@ export const Game: React.FC = () => {
                                     <p className="text-3xl md:text-4xl text-white font-bold mb-8">
                                         🍎 {classicScore}
                                     </p>
-                                    <div className="flex gap-3 justify-center mt-6">
+                                    <div className="flex flex-col gap-3 justify-center mt-6">
                                         <button
                                             onClick={handleShare}
                                             className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
                                         >
-                                            <Share2 size={20} /> Share
+                                            <Share2 size={20} /> Share score
                                         </button>
                                         <button
-                                            onClick={() => startGame('CLASSIC')}
-                                            className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
+                                            onClick={() => startGame('DAILY')}
+                                            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
                                         >
-                                            <Play size={20} /> Play Classic
+                                            <Play size={20} /> Play Daily #{getDailyNumber()}
                                         </button>
                                     </div>
                                 </>
@@ -726,24 +734,8 @@ export const Game: React.FC = () => {
                                     <h1 className="text-4xl md:text-6xl font-bold text-red-500 mb-6">
                                         WASTED
                                     </h1>
-                                    <div className="flex gap-3 justify-center mt-6">
-                                        <button
-                                            onClick={handleShare}
-                                            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
-                                        >
-                                            <Share2 size={20} /> Share
-                                        </button>
-                                        <button
-                                            onClick={handleDeathDismiss}
-                                            className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-500 rounded-full text-lg font-bold transition-all transform hover:scale-105"
-                                        >
-                                            <Play size={20} /> Try Again
-                                        </button>
-                                    </div>
+                                    <p className="text-green-400 text-sm md:text-base mt-4">Tap or click to continue</p>
                                 </>
-                            )}
-                            {gameMode !== 'CLASSIC' && (
-                                <p className="text-green-400 text-sm md:text-base mt-4">Tap or click to continue</p>
                             )}
                         </div>
                     </div>
@@ -771,13 +763,13 @@ export const Game: React.FC = () => {
                                 onClick={handleShare}
                                 className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30"
                             >
-                                <Share2 size={20} /> Share
+                                <Share2 size={20} /> Share score
                             </button>
                             <button
-                                onClick={() => startGame('DAILY')}
-                                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
+                                onClick={() => startGame('CLASSIC')}
+                                className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-500 rounded-full text-base font-bold transition-all transform hover:scale-105"
                             >
-                                <Play size={18} /> Play Daily
+                                <Play size={18} /> Play Classic
                             </button>
                         </div>
                         {gameMode === 'DAILY' && (
