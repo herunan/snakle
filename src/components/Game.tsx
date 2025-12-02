@@ -35,9 +35,7 @@ export const Game: React.FC = () => {
     const [classicHighScore, setClassicHighScore] = useState(0);
     const [isNewPersonalBest, setIsNewPersonalBest] = useState(false);
     const countdownTimerRef = React.useRef<any>(null);
-    const [classicHighScore, setClassicHighScore] = useState(0);
-    const [isNewPersonalBest, setIsNewPersonalBest] = useState(false);
-    const countdownTimerRef = React.useRef<any>(null);
+
     const [nextPuzzleTime, setNextPuzzleTime] = useState('');
     const [classicKiwiSchedule, setClassicKiwiSchedule] = useState<number[]>([]);
 
