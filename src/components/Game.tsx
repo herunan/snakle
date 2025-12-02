@@ -851,21 +851,35 @@ export const Game: React.FC = () => {
                     </div>
                 )}
 
-                {/* Virtual Joystick - 4-Way */}
+                {/* Virtual Joystick - 4-Way with Draggable Knob */}
                 {gameState === 'PLAYING' && (
                     <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
                         <div
-                            className="relative w-32 h-32 bg-white/10 rounded-full border-4 border-white/20 flex items-center justify-center"
+                            className="relative w-32 h-32 bg-white/10 rounded-full border-4 border-white/20 flex items-center justify-center touch-none"
                             onTouchStart={(e) => {
-                                const touch = e.touches[0];
                                 const rect = e.currentTarget.getBoundingClientRect();
                                 const centerX = rect.left + rect.width / 2;
                                 const centerY = rect.top + rect.height / 2;
+                                const maxDistance = 40; // Maximum distance knob can move from center
+
+                                const knob = e.currentTarget.querySelector('.joystick-knob') as HTMLElement;
 
                                 const handleTouchMove = (moveEvent: TouchEvent) => {
                                     const moveTouch = moveEvent.touches[0];
-                                    const deltaX = moveTouch.clientX - centerX;
-                                    const deltaY = moveTouch.clientY - centerY;
+                                    let deltaX = moveTouch.clientX - centerX;
+                                    let deltaY = moveTouch.clientY - centerY;
+
+                                    // Limit knob movement to maxDistance
+                                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                                    if (distance > maxDistance) {
+                                        deltaX = (deltaX / distance) * maxDistance;
+                                        deltaY = (deltaY / distance) * maxDistance;
+                                    }
+
+                                    // Move the knob visually
+                                    if (knob) {
+                                        knob.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                                    }
 
                                     // Determine direction based on angle
                                     const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
@@ -884,6 +898,10 @@ export const Game: React.FC = () => {
                                 };
 
                                 const handleTouchEnd = () => {
+                                    // Return knob to center
+                                    if (knob) {
+                                        knob.style.transform = 'translate(0px, 0px)';
+                                    }
                                     document.removeEventListener('touchmove', handleTouchMove as any);
                                     document.removeEventListener('touchend', handleTouchEnd);
                                 };
@@ -894,14 +912,14 @@ export const Game: React.FC = () => {
                                 e.preventDefault();
                             }}
                         >
-                            {/* Joystick stick/knob */}
-                            <div className="w-12 h-12 bg-white/40 rounded-full border-2 border-white/60 shadow-lg"></div>
+                            {/* Joystick stick/knob - draggable */}
+                            <div className="joystick-knob w-12 h-12 bg-white/40 rounded-full border-2 border-white/60 shadow-lg transition-transform duration-75"></div>
 
                             {/* Directional indicators */}
-                            <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-white/40 text-xs">▲</div>
-                            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-white/40 text-xs">▼</div>
-                            <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white/40 text-xs">◄</div>
-                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/40 text-xs">►</div>
+                            <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-white/40 text-xs pointer-events-none">▲</div>
+                            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-white/40 text-xs pointer-events-none">▼</div>
+                            <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white/40 text-xs pointer-events-none">◄</div>
+                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/40 text-xs pointer-events-none">►</div>
                         </div>
                     </div>
                 )}
