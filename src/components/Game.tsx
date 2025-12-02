@@ -10,7 +10,7 @@ import { SeededRNG, getDailySeed, getDailyNumber } from '../utils/random';
 
 export const Game: React.FC = () => {
     const { snake, changeDirection, moveSnake, isAlive, grow, resetSnake, setSnake, setDirection, setIsAlive } = useSnake();
-    const [gameMode, setGameMode] = useState<'DAILY' | 'TUTORIAL' | 'CLASSIC'>('DAILY');
+    const [gameMode, setGameMode] = useState<'DAILY' | 'CLASSIC'>('DAILY');
     const walls = useDailyLevel(gameMode);
     const [fruit, setFruit] = useState<Point | null>(null);
     const [score, setScore] = useState(0);
@@ -64,28 +64,20 @@ export const Game: React.FC = () => {
 
 
     // Initialize Mode Config (Moved from useEffect to startGame to fix race conditions)
-    const getModeConfig = (mode: 'DAILY' | 'TUTORIAL' | 'CLASSIC', isDebug: boolean) => {
+    const getModeConfig = (mode: 'DAILY' | 'CLASSIC', isDebug: boolean) => {
         let target = 0;
         let totalKiwis = 0;
         let increment = SPEED_DECREMENT;
         let sequence: Point[] = [];
         let savedState = null;
 
-        if (mode === 'TUTORIAL') {
-            target = 3;
-            totalKiwis = 1;
-            sequence = Array.from({ length: 50 }, () => ({
-                x: Math.floor(Math.random() * GRID_SIZE),
-                y: Math.floor(Math.random() * GRID_SIZE)
-            }));
-        } else if (mode === 'CLASSIC') {
+        if (mode === 'CLASSIC') {
             const rng = new SeededRNG(Math.random().toString());
             target = Infinity;
-            // Enable kiwis in Classic mode (30% chance)
-            const isKiwiDay = rng.next() < 0.3;
-            if (isKiwiDay) {
-                totalKiwis = rng.nextInt(1, 3);
-            }
+            // Enable kiwis in Classic mode (Sporadic: ~1 per 15 fruits)
+            // We'll handle the "sporadic" part in the spawn logic or here by setting a high total but controlling spawn rate?
+            // Actually, let's set totalKiwis to a high number but control frequency in the effect.
+            totalKiwis = 999;
             increment = Math.max(1, Math.floor((INITIAL_SPEED - MIN_SPEED) / 50));
 
             for (let i = 0; i < 1000; i++) {
@@ -202,13 +194,22 @@ export const Game: React.FC = () => {
 
         // Check if we should spawn a kiwi
         if (totalKiwisToday > 0 && !kiwi && kiwisSpawnedSoFar < totalKiwisToday) {
-            const interval = Math.floor(targetFruits / (totalKiwisToday + 1));
             let shouldSpawn = false;
 
-            for (let k = 1; k <= totalKiwisToday; k++) {
-                if (fruitIndex === interval * k) {
+            if (gameMode === 'CLASSIC') {
+                // Sporadic spawning for Classic: ~1 every 15 fruits
+                // We can check if fruitIndex is a multiple of 15 (plus some randomness if desired, but fixed is easier)
+                if (fruitIndex > 0 && fruitIndex % 15 === 0) {
                     shouldSpawn = true;
-                    break;
+                }
+            } else {
+                // Daily logic
+                const interval = Math.floor(targetFruits / (totalKiwisToday + 1));
+                for (let k = 1; k <= totalKiwisToday; k++) {
+                    if (fruitIndex === interval * k) {
+                        shouldSpawn = true;
+                        break;
+                    }
                 }
             }
 
@@ -255,7 +256,7 @@ export const Game: React.FC = () => {
     }, [fruitSequence, spawnFruit, fruit]);
 
     // Start Game Sequence
-    const startGame = (mode: 'DAILY' | 'TUTORIAL' | 'CLASSIC') => {
+    const startGame = (mode: 'DAILY' | 'CLASSIC') => {
         setGameMode(mode);
         const isDebug = new URLSearchParams(window.location.search).get('debug') === 'true';
 
@@ -515,32 +516,20 @@ export const Game: React.FC = () => {
     };
 
     const handleReplay = () => {
-        // Replay without resetting score/lives/time
+        // For Classic, we want to restart completely to reset score/lives
+        if (gameMode === 'CLASSIC') {
+            startGame('CLASSIC');
+            return;
+        }
+
+        // Replay without resetting score/lives/time (for Daily resume logic if needed, but usually we don't replay Daily from victory)
         resetSnake();
         setFruitIndex(0);
-        setScore(0);
-        setLives(0);
-        setElapsedTime(0);
-        setStartTime(null);
-        setKiwiCount(0);
-        setLastKiwiSpawnIndex(-1);
-        setKiwi(null);
-
-        setGameState('COUNTDOWN');
-        setCountdown(3);
-        let count = 3;
-        const timer = setInterval(() => {
-            count--;
-            setCountdown(count);
-            if (count === 0) {
-                clearInterval(timer);
-                setGameState('PLAYING');
-            }
-        }, 1000);
+        // ... (rest of logic only if we kept it, but for Classic we want full restart)
     };
 
     // Handle game mode switching with appropriate consequences
-    const handleModeSwitch = (newMode: 'DAILY' | 'TUTORIAL' | 'CLASSIC') => {
+    const handleModeSwitch = (newMode: 'DAILY' | 'CLASSIC') => {
         // Confirm if playing
         if (gameState === 'PLAYING' || gameState === 'COUNTDOWN') {
             if (gameMode === 'DAILY') {
@@ -587,41 +576,26 @@ export const Game: React.FC = () => {
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
         >
-            {/* Title at top */}
-            {/* Title at top - Removed mt-4 */}
-            <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-2">
-                SNAKLE
-            </h1>
+            {/* Header: Title and Mode Button Centered */}
+            <div className="flex items-center justify-center gap-4 mb-2 relative z-30">
+                <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
+                    SNAKLE
+                </h1>
+                {gameState !== 'START' && (
+                    <button
+                        onClick={() => handleModeSwitch(gameMode === 'DAILY' ? 'CLASSIC' : 'DAILY')}
+                        className={`px-3 py-1 rounded text-white font-bold transition-all text-xs ${gameMode === 'DAILY'
+                                ? 'bg-purple-600 hover:bg-purple-500'
+                                : 'bg-blue-600 hover:bg-blue-500'
+                            }`}
+                    >
+                        {gameMode === 'DAILY' ? 'Play Classic' : 'Play Daily'}
+                    </button>
+                )}
+            </div>
 
-            {/* Mode Selection Buttons - Show when not on start screen */}
-            {gameState !== 'START' && (
-                <div className="flex gap-2 mb-4 text-xs">
-                    {gameMode !== 'DAILY' && (
-                        <button
-                            onClick={() => handleModeSwitch('DAILY')}
-                            className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-white font-bold transition-all"
-                        >
-                            Daily
-                        </button>
-                    )}
-                    {gameMode !== 'CLASSIC' && (
-                        <button
-                            onClick={() => handleModeSwitch('CLASSIC')}
-                            className="px-3 py-1 bg-purple-600 hover:bg-purple-500 rounded text-white font-bold transition-all"
-                        >
-                            Classic
-                        </button>
-                    )}
-                    {gameMode !== 'TUTORIAL' && (
-                        <button
-                            onClick={() => handleModeSwitch('TUTORIAL')}
-                            className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded text-white font-bold transition-all"
-                        >
-                            Tutorial
-                        </button>
-                    )}
-                </div>
-            )}
+            {/* Mode Selection Buttons - Removed (integrated into header) */}
+
 
             {/* Scoreboard - Lives left, Fruits middle, Time right */}
             {gameState !== 'START' && (
@@ -659,40 +633,44 @@ export const Game: React.FC = () => {
 
                 {/* Main Menu Button removed from here - now in title area */}
 
-                {/* Start Screen */}
+                {/* Start Screen Overlay */}
                 {gameState === 'START' && (
-                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 px-6">
-                        <p className="text-gray-300 text-left text-sm md:text-base mb-6 max-w-md leading-relaxed">
-                            Eat the fruit without eating yourself. You can go through walls.
-                            <br /><br />
-                            <span className="text-yellow-400">Controls:</span>
-                            <br />
-                            📱 Hold finger on screen and move around
-                            <br />
-                            ⌨️ Arrow keys
+                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm z-20 px-6 text-center">
+                        <p className="text-gray-300 text-sm md:text-base mb-6 max-w-md leading-relaxed">
+                            {gameMode === 'DAILY' ? (
+                                <>
+                                    Eat fruit without eating yourself and obstacles. You can go through walls. Use as few lives as possible.
+                                    <br /><br />
+                                    <span className="text-yellow-400">Controls:</span>
+                                    <br />
+                                    📱 Hold finger on screen and move around
+                                    <br />
+                                    ⌨️ Arrow keys
+                                </>
+                            ) : (
+                                <>
+                                    Classic Snakle! Eat fruit without eating yourself. You can go through walls. You get one life.
+                                </>
+                            )}
                         </p>
 
-                        <div className="flex flex-col gap-4 w-full max-w-xs">
+                        <button
+                            onClick={() => startGame(gameMode)}
+                            className={`px-8 py-4 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2 ${gameMode === 'DAILY'
+                                    ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/30'
+                                    : 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30'
+                                }`}
+                        >
+                            <Play size={24} /> Play {gameMode === 'DAILY' ? 'Daily' : 'Classic'}
+                        </button>
+
+                        <div className="mt-6">
                             <button
-                                onClick={() => startGame('DAILY')}
-                                className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2"
+                                onClick={() => setGameMode(gameMode === 'DAILY' ? 'CLASSIC' : 'DAILY')}
+                                className="text-sm text-gray-400 hover:text-white underline decoration-dotted underline-offset-4"
                             >
-                                <Play size={24} /> Snakle Daily #{getDailyNumber()}
+                                Switch to {gameMode === 'DAILY' ? 'Classic' : 'Daily'} Mode
                             </button>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => startGame('CLASSIC')}
-                                    className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
-                                >
-                                    Snakle Classic
-                                </button>
-                                <button
-                                    onClick={() => startGame('TUTORIAL')}
-                                    className="flex-1 py-3 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-bold transition-all opacity-80 hover:opacity-100"
-                                >
-                                    Tutorial
-                                </button>
-                            </div>
                         </div>
                     </div>
                 )}
@@ -737,7 +715,7 @@ export const Game: React.FC = () => {
                                     </div>
                                 </>
                             ) : (
-                                <p className="text-green-400 text-sm md:text-base mt-4">Click or tap to continue</p>
+                                <p className="text-green-400 text-sm md:text-base mt-4">Tap or click to continue</p>
                             )}
                         </div>
                     </div>
@@ -751,7 +729,7 @@ export const Game: React.FC = () => {
                         </h1>
                         <div className="text-center mb-4 space-y-2">
                             <p className="text-xl md:text-2xl font-bold text-white">
-                                {gameMode === 'DAILY' ? `Snakle #${getDailyNumber()}` : gameMode === 'TUTORIAL' ? 'Tutorial' : 'Classic'} 🍎 {score}{kiwiCount > 0 ? ` 🥝 ${kiwiCount}` : ''}
+                                {gameMode === 'DAILY' ? `Snakle #${getDailyNumber()}` : 'Classic'} 🍎 {score}{kiwiCount > 0 ? ` 🥝 ${kiwiCount}` : ''}
                             </p>
                             {gameMode !== 'CLASSIC' && (
                                 <>
@@ -766,14 +744,12 @@ export const Game: React.FC = () => {
                         </div>
                         <div className="flex flex-col gap-2 items-center">
                             <div className="flex gap-3">
-                                {gameMode !== 'TUTORIAL' && (
-                                    <button
-                                        onClick={handleShare}
-                                        className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30"
-                                    >
-                                        <Share2 size={20} /> Share
-                                    </button>
-                                )}
+                                <button
+                                    onClick={handleShare}
+                                    className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-base font-bold transition-all transform hover:scale-105 shadow-lg shadow-blue-600/30"
+                                >
+                                    <Share2 size={20} /> Share
+                                </button>
                                 {gameMode === 'CLASSIC' && (
                                     <button
                                         onClick={handleReplay}
