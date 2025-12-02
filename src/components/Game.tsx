@@ -316,6 +316,8 @@ export const Game: React.FC = () => {
         const extraSegments = Array(Math.max(0, totalLength - 3)).fill(tail);
         setSnake([...baseSnake, ...extraSegments]);
         setDirection('UP');
+        setIsAlive(true);
+
         setGameState('COUNTDOWN');
         setCountdown(3);
 
