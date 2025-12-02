@@ -703,6 +703,12 @@ export const Game: React.FC = () => {
                     setElapsedTime(state.elapsedTime || 0);
                     setKiwiCount(state.kiwiCount || 0);
                     setGameState('VICTORY');
+
+                    // CRITICAL: Clear any countdown timer that might be running from the previous mode
+                    if (countdownTimerRef.current) {
+                        clearInterval(countdownTimerRef.current);
+                        countdownTimerRef.current = null;
+                    }
                     return;
                 }
             }
@@ -898,7 +904,8 @@ export const Game: React.FC = () => {
                 )}
 
                 {/* Virtual Joystick - 4-Way with Draggable Knob */}
-                {gameState === 'PLAYING' && (
+                {/* Only show on mobile and when playing */}
+                {isMobile && gameState === 'PLAYING' && (
                     <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
                         <div
                             className="relative w-32 h-32 bg-white/10 rounded-full border-4 border-white/20 flex items-center justify-center touch-none"
