@@ -12,9 +12,25 @@ export function useSnake() {
     const [snake, setSnake] = useState<Point[]>(INITIAL_SNAKE);
     const [direction, setDirection] = useState<Direction>('UP');
     const [isAlive, setIsAlive] = useState(true);
+    const [directionQueue, setDirectionQueue] = useState<Direction[]>([]);
 
     const moveSnake = useCallback(() => {
         if (!isAlive) return;
+
+        // Process queued direction before moving
+        if (directionQueue.length > 0) {
+            const nextDir = directionQueue[0];
+            const isOpposite =
+                (nextDir === 'UP' && direction === 'DOWN') ||
+                (nextDir === 'DOWN' && direction === 'UP') ||
+                (nextDir === 'LEFT' && direction === 'RIGHT') ||
+                (nextDir === 'RIGHT' && direction === 'LEFT');
+
+            if (!isOpposite) {
+                setDirection(nextDir);
+            }
+            setDirectionQueue(prev => prev.slice(1));
+        }
 
         setSnake((prevSnake) => {
             const head = prevSnake[0];
@@ -38,19 +54,17 @@ export function useSnake() {
             const newSnake = [newHead, ...prevSnake.slice(0, -1)];
             return newSnake;
         });
-    }, [direction, isAlive]);
+    }, [direction, isAlive, directionQueue]);
 
     const changeDirection = useCallback((newDirection: Direction) => {
-        setDirection((prev) => {
-            // Prevent 180 degree turns
-            const isOpposite =
-                (newDirection === 'UP' && prev === 'DOWN') ||
-                (newDirection === 'DOWN' && prev === 'UP') ||
-                (newDirection === 'LEFT' && prev === 'RIGHT') ||
-                (newDirection === 'RIGHT' && prev === 'LEFT');
-
-            if (isOpposite) return prev;
-            return newDirection;
+        // Add to queue instead of changing directly (max queue size of 1)
+        setDirectionQueue(prev => {
+            // Only keep the most recent direction in queue
+            if (prev.length === 0) {
+                return [newDirection];
+            }
+            // Replace with new direction if already queued
+            return [newDirection];
         });
     }, []);
 
@@ -65,6 +79,7 @@ export function useSnake() {
         setSnake(INITIAL_SNAKE);
         setDirection('UP');
         setIsAlive(true);
+        setDirectionQueue([]);
     }, []);
 
     return {

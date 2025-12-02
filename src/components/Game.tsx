@@ -46,6 +46,27 @@ export const Game: React.FC = () => {
         }
     }, []);
 
+    // Enforce Daily completion - prevent playing if already completed
+    useEffect(() => {
+        if (gameMode === 'DAILY' && (gameState === 'START' || gameState === 'PLAYING' || gameState === 'COUNTDOWN')) {
+            const today = getDailySeed();
+            const savedState = localStorage.getItem(`snakle_daily_${today}`);
+            if (savedState) {
+                const state = JSON.parse(savedState);
+                if (state.completed) {
+                    // Force to victory screen
+                    setTargetFruits(state.targetFruits || 10);
+                    setTotalKiwisToday(state.totalKiwis || 0);
+                    setScore(state.score || 0);
+                    setLives(state.lives || 0);
+                    setElapsedTime(state.elapsedTime || 0);
+                    setKiwiCount(state.kiwiCount || 0);
+                    setGameState('VICTORY');
+                }
+            }
+        }
+    }, [gameMode, gameState]);
+
     // Update Next Snakle timer in real-time
     useEffect(() => {
         if (gameMode === 'DAILY' && gameState === 'VICTORY') {
@@ -423,12 +444,18 @@ export const Game: React.FC = () => {
             // Check victory condition (Only for non-Classic modes)
             if (gameMode !== 'CLASSIC' && score + 1 >= targetFruits) {
                 setGameState('VICTORY');
-                if (gameMode === 'DAILY') {
-                    // Mark Daily as completed
-                    const today = getDailySeed();
-                    const state = { score: score + 1, lives, elapsedTime, kiwiCount, completed: true };
-                    localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(state));
-                }
+                // Save completed state
+                const today = getDailySeed();
+                const completedState = {
+                    score: score + 1,
+                    lives,
+                    elapsedTime,
+                    kiwiCount,
+                    completed: true,
+                    targetFruits,
+                    totalKiwis: totalKiwisToday
+                };
+                localStorage.setItem(`snakle_daily_${today}`, JSON.stringify(completedState));
                 return;
             }
 
