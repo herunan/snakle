@@ -329,7 +329,7 @@ export const Game: React.FC = () => {
         }
         setTargetFruits(config.target);
         setTotalKiwisToday(config.totalKiwis);
-        setSpeedIncrement(config.increment);
+
         setFruitSequence(config.sequence);
 
         // Default State
