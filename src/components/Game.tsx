@@ -464,7 +464,7 @@ export const Game: React.FC = () => {
                 // Speed based on score, capping at MIN_SPEED (50ms)
                 // Start at 150, decrease by 2 per fruit. To reach 50, we need 50 fruits.
                 // Math.max(50, 150 - (score * 2))
-                const newSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - (s * 2));
+                const newSpeed = Math.max(MIN_SPEED, INITIAL_SPEED - ((score + 1) * 2));
                 setSpeed(newSpeed);
             } else {
                 // Daily: Speed based on apple score
