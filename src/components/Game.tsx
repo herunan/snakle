@@ -533,18 +533,7 @@ export const Game: React.FC = () => {
         }
     };
 
-    const handleReplay = () => {
-        // For Classic, we want to restart completely to reset score/lives
-        if (gameMode === 'CLASSIC') {
-            startGame('CLASSIC');
-            return;
-        }
 
-        // Replay without resetting score/lives/time (for Daily resume logic if needed, but usually we don't replay Daily from victory)
-        resetSnake();
-        setFruitIndex(0);
-        // ... (rest of logic only if we kept it, but for Classic we want full restart)
-    };
 
     // Handle game mode switching with appropriate consequences
     const handleModeSwitch = (newMode: 'DAILY' | 'CLASSIC') => {
