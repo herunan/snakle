@@ -54,7 +54,7 @@ export const Game: React.FC = () => {
             if (savedState) {
                 const state = JSON.parse(savedState);
                 if (state.completed && gameState !== 'VICTORY') {
-                    // Force to victory screen, skip start screen
+                    // Force to victory screen immediately, skip everything else
                     setTargetFruits(state.targetFruits || 10);
                     setTotalKiwisToday(state.totalKiwis || 0);
                     setScore(state.score || 0);
@@ -66,6 +66,26 @@ export const Game: React.FC = () => {
             }
         }
     }, [gameMode, gameState]);
+
+    // Additional check on mount to prevent completed Daily from showing start screen
+    useEffect(() => {
+        if (gameMode === 'DAILY') {
+            const today = getDailySeed();
+            const savedState = localStorage.getItem(`snakle_daily_${today}`);
+            if (savedState) {
+                const state = JSON.parse(savedState);
+                if (state.completed) {
+                    setTargetFruits(state.targetFruits || 10);
+                    setTotalKiwisToday(state.totalKiwis || 0);
+                    setScore(state.score || 0);
+                    setLives(state.lives || 0);
+                    setElapsedTime(state.elapsedTime || 0);
+                    setKiwiCount(state.kiwiCount || 0);
+                    setGameState('VICTORY');
+                }
+            }
+        }
+    }, []);
 
     // Update Next Snakle timer in real-time
     useEffect(() => {
@@ -881,7 +901,8 @@ export const Game: React.FC = () => {
 
                                     const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
 
-                                    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+                                    // Update direction continuously (no threshold) for fluid movement
+                                    if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
                                         if (angle >= -45 && angle < 45) {
                                             changeDirection('RIGHT');
                                         } else if (angle >= 45 && angle < 135) {
